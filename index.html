@@ -1,477 +1,881 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Organizador Financeiro</title>
-
-    <!-- React e ReactDOM (CDN) -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-    <!-- Babel para usar JSX inline -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Pessoais</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
-      body {
-        font-family: "Helvetica Neue", Arial, sans-serif;
-        background-color: #000;
-        color: #fff;
-        margin: 0;
-        padding: 1rem;
-      }
-      .app {
-        max-width: 900px;
-        margin: 0 auto;
-      }
-      .card {
-        background: #111;
-        border: 1px solid #222;
-        border-radius: 12px;
-        padding: 1rem;
-        margin: 1rem 0;
-      }
-      .purple {
-        color: #bf94ff;
-      }
-      .title {
-        font-size: 1.4rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-      .subtitle {
-        font-size: 1rem;
-        color: #aaa;
-        margin-bottom: 1rem;
-      }
-      .form-group {
-        margin: 0.8rem 0;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 0.3rem;
-        font-size: 0.9rem;
-        color: #ddd;
-      }
-      .form-group input,
-      .form-group select {
-        width: 100%;
-        padding: 0.6rem;
-        border-radius: 6px;
-        border: 1px solid #444;
-        background: #222;
-        color: #fff;
-      }
-      .btn {
-        padding: 0.6rem 1rem;
-        background: #9933ff;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-      }
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .list-item {
-        border-bottom: 1px solid #333;
-        padding: 0.6rem 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .category-tag {
-        background: #9933ff;
-        color: #fff;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        margin-left: 0.5rem;
-      }
-      .week-month-box {
-        background: #181818;
-        border-radius: 8px;
-        padding: 0.8rem;
-      }
-      .sep {
-        margin: 1rem 0;
-        border-bottom: 1px solid #333;
-        padding-bottom: 1rem;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #8a2be2 0%, #da70d6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: rgba(138, 43, 226, 0.2);
+            border-color: rgba(138, 43, 226, 0.5);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #8a2be2 0%, #da70d6 100%);
+            border-color: transparent;
+            box-shadow: 0 8px 32px rgba(138, 43, 226, 0.4);
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: #da70d6;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #da70d6;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #8a2be2;
+            background: rgba(138, 43, 226, 0.1);
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #8a2be2 0%, #da70d6 100%);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(138, 43, 226, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .button-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(218, 112, 214, 0.1) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #da70d6;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .transaction-item:hover {
+            background: rgba(138, 43, 226, 0.1);
+            border-color: rgba(138, 43, 226, 0.4);
+            transform: translateX(5px);
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-description {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .transaction-meta {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9em;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .transaction-amount {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #ff6b6b;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(138, 43, 226, 0.3);
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-right: 5px;
+        }
+
+        .delete-btn {
+            padding: 8px 16px;
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 107, 107, 0.4);
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-label {
+            min-width: 150px;
+            color: #da70d6;
+        }
+
+        .chart-bar-fill {
+            height: 30px;
+            background: linear-gradient(90deg, #8a2be2 0%, #da70d6 100%);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .transaction-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
-      const App = () => {
-        const [transacoes, setTransacoes] = React.useState([]);
-        const [reserva, setReserva] = React.useState(0);
-        const [contasFixas, setContasFixas] = React.useState([]);
-        const [form, setForm] = React.useState({
-          descricao: "",
-          valor: "",
-          categoria: "outros",
-          forma: "dinheiro",
-        });
+        const { useState, useEffect } = React;
 
-        const categoriasPadrao = ["alimentação", "transporte", "lazer", "moradia", "saúde", "outros"];
-        const formasPadrao = ["dinheiro", "pix", "cartão de crédito", "cartão de débito", "boleto"];
+        function App() {
+            const [activeTab, setActiveTab] = useState('gastos');
+            const [gastos, setGastos] = useState([]);
+            const [contasFixas, setContasFixas] = useState([]);
+            const [reservaEmergencia, setReservaEmergencia] = useState(0);
 
-        React.useEffect(() => {
-          const salvo = localStorage.getItem("transacoes");
-          if (salvo) setTransacoes(JSON.parse(salvo));
-          const salvoReserva = localStorage.getItem("reserva");
-          if (salvoReserva) setReserva(parseFloat(salvoReserva));
-          const salvoContasFixas = localStorage.getItem("contasFixas");
-          if (salvoContasFixas) setContasFixas(JSON.parse(salvoContasFixas));
-        }, []);
+            // Formulário de gastos
+            const [formGasto, setFormGasto] = useState({
+                descricao: '',
+                valor: '',
+                categoria: 'Alimentação',
+                formaPagamento: 'Dinheiro',
+                data: new Date().toISOString().split('T')[0]
+            });
 
-        const salvarNoLocal = React.useCallback(() => {
-          localStorage.setItem("transacoes", JSON.stringify(transacoes));
-          localStorage.setItem("reserva", reserva.toString());
-          localStorage.setItem("contasFixas", JSON.stringify(contasFixas));
-        }, [transacoes, reserva, contasFixas]);
+            // Formulário de contas fixas
+            const [formContaFixa, setFormContaFixa] = useState({
+                descricao: '',
+                valor: '',
+                vencimento: '',
+                parcelas: 1,
+                parcelaAtual: 1
+            });
 
-        React.useEffect(() => {
-          salvarNoLocal();
-        }, [transacoes, reserva, contasFixas, salvarNoLocal]);
+            // Carregar dados do localStorage
+            useEffect(() => {
+                const savedGastos = localStorage.getItem('gastos');
+                const savedContasFixas = localStorage.getItem('contasFixas');
+                const savedReserva = localStorage.getItem('reservaEmergencia');
+                
+                if (savedGastos) setGastos(JSON.parse(savedGastos));
+                if (savedContasFixas) setContasFixas(JSON.parse(savedContasFixas));
+                if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
+            }, []);
 
-        const hoje = new Date();
+            // Salvar dados no localStorage
+            useEffect(() => {
+                localStorage.setItem('gastos', JSON.stringify(gastos));
+            }, [gastos]);
 
-        // Filtros por período
-        const filtrarPorPeriodo = (arr, inicio, fim) =>
-          arr.filter((t) => {
-            const data = new Date(t.data || hoje);
-            return data >= inicio && data <= fim;
-          });
+            useEffect(() => {
+                localStorage.setItem('contasFixas', JSON.stringify(contasFixas));
+            }, [contasFixas]);
 
-        const inicioSemana = new Date(hoje);
-        inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-        const fimSemana = new Date(hoje);
-        fimSemana.setDate(hoje.getDate() + (6 - hoje.getDay()));
+            useEffect(() => {
+                localStorage.setItem('reservaEmergencia', reservaEmergencia.toString());
+            }, [reservaEmergencia]);
 
-        const transacoesSemana = filtrarPorPeriodo(transacoes, inicioSemana, fimSemana);
+            const adicionarGasto = (e) => {
+                e.preventDefault();
+                const novoGasto = {
+                    id: Date.now(),
+                    ...formGasto,
+                    valor: parseFloat(formGasto.valor)
+                };
+                setGastos([...gastos, novoGasto]);
+                setFormGasto({
+                    descricao: '',
+                    valor: '',
+                    categoria: 'Alimentação',
+                    formaPagamento: 'Dinheiro',
+                    data: new Date().toISOString().split('T')[0]
+                });
+            };
 
-        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-        const transacoesMes = filtrarPorPeriodo(transacoes, inicioMes, fimMes);
+            const adicionarContaFixa = (e) => {
+                e.preventDefault();
+                const novaConta = {
+                    id: Date.now(),
+                    ...formContaFixa,
+                    valor: parseFloat(formContaFixa.valor),
+                    parcelas: parseInt(formContaFixa.parcelas),
+                    parcelaAtual: parseInt(formContaFixa.parcelaAtual)
+                };
+                setContasFixas([...contasFixas, novaConta]);
+                setFormContaFixa({
+                    descricao: '',
+                    valor: '',
+                    vencimento: '',
+                    parcelas: 1,
+                    parcelaAtual: 1
+                });
+            };
 
-        // Entradas vs Saídas
-        const totalEntradas = transacoes
-          .filter((t) => t.entrada)
-          .reduce((acc, t) => acc + t.valor, 0);
-        const totalSaidas = transacoes
-          .filter((t) => !t.entrada)
-          .reduce((acc, t) => acc + t.valor, 0);
-        const saldo = totalEntradas - totalSaidas;
+            const deletarGasto = (id) => {
+                setGastos(gastos.filter(g => g.id !== id));
+            };
 
-        // Maiores gastos por categoria
-        const gastosPorCategoria = {};
-        transacoesSemana.forEach((t) => {
-          if (!t.entrada) {
-            const categ = t.categoria || "outros";
-            gastosPorCategoria[categ] = (gastosPorCategoria[categ] || 0) + t.valor;
-          }
-        });
-        const categoriasOrdenadas = Object.entries(gastosPorCategoria)
-          .sort((a, b) => b[1] - a[1]);
+            const deletarContaFixa = (id) => {
+                setContasFixas(contasFixas.filter(c => c.id !== id));
+            };
 
-        // Semana e mês
-        const valorGastoSemana = transacoesSemana
-          .filter((t) => !t.entrada)
-          .reduce((acc, t) => acc + t.valor, 0);
-        const valorGastoMes = transacoesMes
-          .filter((t) => !t.entrada)
-          .reduce((acc, t) => acc + t.valor, 0);
+            // Análises
+            const getGastosPorCategoria = () => {
+                const categorias = {};
+                gastos.forEach(gasto => {
+                    if (!categorias[gasto.categoria]) {
+                        categorias[gasto.categoria] = 0;
+                    }
+                    categorias[gasto.categoria] += gasto.valor;
+                });
+                return Object.entries(categorias)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([categoria, valor]) => ({ categoria, valor }));
+            };
 
-        const handleInputChange = (e) => {
-          const { name, value } = e.target;
-          setForm((prev) => ({ ...prev, [name]: value }));
-        };
+            const getGastosSemana = () => {
+                const hoje = new Date();
+                const umaSemanaAtras = new Date(hoje);
+                umaSemanaAtras.setDate(hoje.getDate() - 7);
 
-        const handleSubmitGasto = (e) => {
-          e.preventDefault();
-          const valor = parseFloat(form.valor);
-          if (!valor || !form.descricao) return;
-          const novaTransacao = {
-            id: Date.now(),
-            descricao: form.descricao,
-            valor,
-            categoria: form.categoria,
-            forma: form.forma,
-            entrada: false,
-            data: hoje.toISOString().split("T")[0],
-          };
-          setTransacoes((prev) => [...prev, novaTransacao]);
-          setForm({ descricao: "", valor: "", categoria: "outros", forma: "dinheiro" });
-        };
+                return gastos.filter(gasto => {
+                    const dataGasto = new Date(gasto.data);
+                    return dataGasto >= umaSemanaAtras && dataGasto <= hoje;
+                });
+            };
 
-        const excluirTransacao = (id) => {
-          setTransacoes((prev) => prev.filter((t) => t.id !== id));
-        };
+            const getGastosMes = () => {
+                const hoje = new Date();
+                const mesAtual = hoje.getMonth();
+                const anoAtual = hoje.getFullYear();
 
-        // Contas fixas
-        const [formFixa, setFormFixa] = React.useState({
-          descricao: "",
-          valor: "",
-          vencimento: "", // DD/MM
-        });
+                return gastos.filter(gasto => {
+                    const dataGasto = new Date(gasto.data);
+                    return dataGasto.getMonth() === mesAtual && dataGasto.getFullYear() === anoAtual;
+                });
+            };
 
-        const handleSubmitFixa = (e) => {
-          e.preventDefault();
-          const valor = parseFloat(formFixa.valor);
-          if (!valor || !formFixa.descricao || !formFixa.vencimento) return;
-          const conta = {
-            id: Date.now(),
-            ...formFixa,
-            valor,
-          };
-          setContasFixas((prev) => [...prev, conta]);
-          setFormFixa({ descricao: "", valor: "", vencimento: "" });
-        };
+            const totalGeral = gastos.reduce((sum, g) => sum + g.valor, 0);
+            const totalSemana = getGastosSemana().reduce((sum, g) => sum + g.valor, 0);
+            const totalMes = getGastosMes().reduce((sum, g) => sum + g.valor, 0);
+            const totalContasFixas = contasFixas.reduce((sum, c) => sum + c.valor, 0);
 
-        const excluirFixa = (id) => {
-          setContasFixas((prev) => prev.filter((t) => t.id !== id));
-        };
+            const formatarMoeda = (valor) => {
+                return new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                }).format(valor);
+            };
 
-        return (
-          <div className="app">
-            <header>
-              <h1 className="purple">Organizador Financeiro</h1>
-              <p className="subtitle">
-                Controle de gastos diários, reservas e contas fixas
-              </p>
-            </header>
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>💰 Finanças Pessoais</h1>
+                        <p>Organize suas finanças com estilo</p>
+                    </div>
 
-            {/* Resumo principal */}
-            <div className="card">
-              <h2 className="title">Resumo Geral</h2>
+                    <div className="tabs">
+                        <button 
+                            className={`tab ${activeTab === 'gastos' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('gastos')}
+                        >
+                            📊 Gastos Diários
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'analise' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('analise')}
+                        >
+                            📈 Análises
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'contasFixas' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('contasFixas')}
+                        >
+                            📋 Contas Fixas
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'reserva' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('reserva')}
+                        >
+                            🏦 Reserva de Emergência
+                        </button>
+                    </div>
 
-              <div className="week-month-box">
-                <p>
-                  Entradas: <strong>R$ {totalEntradas.toFixed(2)}</strong>
-                </p>
-                <p>
-                  Saídas: <strong className="purple">R$ {totalSaidas.toFixed(2)}</strong>
-                </p>
-                <p>
-                  Saldo:{" "}
-                  <strong
-                    className={saldo >= 0 ? "purple" : "red"}
-                    style={{ color: saldo >= 0 ? "#bf94ff" : "#ff7777" }}
-                  >
-                    R$ {saldo.toFixed(2)}
-                  </strong>
-                </p>
-              </div>
-            </div>
+                    {activeTab === 'gastos' && (
+                        <>
+                            <div className="card">
+                                <h2>Adicionar Novo Gasto</h2>
+                                <form onSubmit={adicionarGasto}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Descrição</label>
+                                            <input 
+                                                type="text"
+                                                value={formGasto.descricao}
+                                                onChange={(e) => setFormGasto({...formGasto, descricao: e.target.value})}
+                                                required
+                                                placeholder="Ex: Almoço no restaurante"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Valor</label>
+                                            <input 
+                                                type="number"
+                                                step="0.01"
+                                                value={formGasto.valor}
+                                                onChange={(e) => setFormGasto({...formGasto, valor: e.target.value})}
+                                                required
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Categoria</label>
+                                            <select 
+                                                value={formGasto.categoria}
+                                                onChange={(e) => setFormGasto({...formGasto, categoria: e.target.value})}
+                                            >
+                                                <option>Alimentação</option>
+                                                <option>Transporte</option>
+                                                <option>Lazer</option>
+                                                <option>Saúde</option>
+                                                <option>Educação</option>
+                                                <option>Moradia</option>
+                                                <option>Compras</option>
+                                                <option>Outros</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Forma de Pagamento</label>
+                                            <select 
+                                                value={formGasto.formaPagamento}
+                                                onChange={(e) => setFormGasto({...formGasto, formaPagamento: e.target.value})}
+                                            >
+                                                <option>Dinheiro</option>
+                                                <option>Débito</option>
+                                                <option>Crédito</option>
+                                                <option>PIX</option>
+                                                <option>Transferência</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Data</label>
+                                            <input 
+                                                type="date"
+                                                value={formGasto.data}
+                                                onChange={(e) => setFormGasto({...formGasto, data: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <button type="submit">Adicionar Gasto</button>
+                                </form>
+                            </div>
 
-            {/* Reserva de emergência */}
-            <div className="card">
-              <h2 className="title">Reserva de Emergência</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={reserva || ""}
-                  onChange={(e) => setReserva(parseFloat(e.target.value) || 0)}
-                  placeholder="R$ 0,00"
-                  style={{ width: "200px" }}
-                />
-                <span style={{ color: "#aaa" }}>definida</span>
-              </div>
-            </div>
+                            <div className="card">
+                                <h2>Últimos Gastos</h2>
+                                {gastos.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">📝</div>
+                                        <p>Nenhum gasto registrado ainda</p>
+                                    </div>
+                                ) : (
+                                    gastos.slice().reverse().map(gasto => (
+                                        <div key={gasto.id} className="transaction-item">
+                                            <div className="transaction-info">
+                                                <div className="transaction-description">
+                                                    {gasto.descricao}
+                                                </div>
+                                                <div className="transaction-meta">
+                                                    <span className="category-badge">{gasto.categoria}</span>
+                                                    <span>{gasto.formaPagamento}</span>
+                                                    <span>{new Date(gasto.data).toLocaleDateString('pt-BR')}</span>
+                                                </div>
+                                            </div>
+                                            <div style={{display: 'flex', alignItems: 'center'}}>
+                                                <div className="transaction-amount">
+                                                    {formatarMoeda(gasto.valor)}
+                                                </div>
+                                                <button 
+                                                    className="delete-btn"
+                                                    onClick={() => deletarGasto(gasto.id)}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </>
+                    )}
 
-            {/* Formulário de gasto diário */}
-            <div className="card">
-              <h2 className="title">Lançar Gasto Diário</h2>
-              <form onSubmit={handleSubmitGasto}>
-                <div className="form-group">
-                  <label>Descrição</label>
-                  <input
-                    type="text"
-                    name="descricao"
-                    value={form.descricao}
-                    onChange={handleInputChange}
-                    placeholder="Ex.: mercado, supermercado, energia"
-                    required
-                  />
+                    {activeTab === 'analise' && (
+                        <>
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-label">Total Geral</div>
+                                    <div className="stat-value">{formatarMoeda(totalGeral)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Gastos na Semana</div>
+                                    <div className="stat-value">{formatarMoeda(totalSemana)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Gastos no Mês</div>
+                                    <div className="stat-value">{formatarMoeda(totalMes)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Média Diária (Mês)</div>
+                                    <div className="stat-value">
+                                        {formatarMoeda(totalMes / new Date().getDate())}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h2>Maiores Gastos por Categoria</h2>
+                                {getGastosPorCategoria().length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">📊</div>
+                                        <p>Nenhum dado para análise</p>
+                                    </div>
+                                ) : (
+                                    <div className="chart-container">
+                                        {getGastosPorCategoria().map(({ categoria, valor }) => {
+                                            const porcentagem = (valor / totalGeral) * 100;
+                                            return (
+                                                <div key={categoria} className="chart-bar">
+                                                    <div className="chart-label">{categoria}</div>
+                                                    <div 
+                                                        className="chart-bar-fill"
+                                                        style={{ width: `${porcentagem}%`, minWidth: '80px' }}
+                                                    >
+                                                        {formatarMoeda(valor)}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="card">
+                                <h2>Gastos da Semana ({getGastosSemana().length} transações)</h2>
+                                {getGastosSemana().length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">📅</div>
+                                        <p>Nenhum gasto nos últimos 7 dias</p>
+                                    </div>
+                                ) : (
+                                    getGastosSemana().slice().reverse().map(gasto => (
+                                        <div key={gasto.id} className="transaction-item">
+                                            <div className="transaction-info">
+                                                <div className="transaction-description">
+                                                    {gasto.descricao}
+                                                </div>
+                                                <div className="transaction-meta">
+                                                    <span className="category-badge">{gasto.categoria}</span>
+                                                    <span>{gasto.formaPagamento}</span>
+                                                    <span>{new Date(gasto.data).toLocaleDateString('pt-BR')}</span>
+                                                </div>
+                                            </div>
+                                            <div className="transaction-amount">
+                                                {formatarMoeda(gasto.valor)}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="card">
+                                <h2>Resumo Mensal - {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</h2>
+                                <div className="stats-grid">
+                                    <div className="stat-card">
+                                        <div className="stat-label">Total do Mês</div>
+                                        <div className="stat-value">{formatarMoeda(totalMes)}</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Transações</div>
+                                        <div className="stat-value">{getGastosMes().length}</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Ticket Médio</div>
+                                        <div className="stat-value">
+                                            {formatarMoeda(getGastosMes().length > 0 ? totalMes / getGastosMes().length : 0)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'contasFixas' && (
+                        <>
+                            <div className="card">
+                                <h2>Adicionar Conta Fixa / Parcela</h2>
+                                <form onSubmit={adicionarContaFixa}>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Descrição</label>
+                                            <input 
+                                                type="text"
+                                                value={formContaFixa.descricao}
+                                                onChange={(e) => setFormContaFixa({...formContaFixa, descricao: e.target.value})}
+                                                required
+                                                placeholder="Ex: Internet, Financiamento"
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Valor da Parcela</label>
+                                            <input 
+                                                type="number"
+                                                step="0.01"
+                                                value={formContaFixa.valor}
+                                                onChange={(e) => setFormContaFixa({...formContaFixa, valor: e.target.value})}
+                                                required
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Vencimento</label>
+                                            <input 
+                                                type="date"
+                                                value={formContaFixa.vencimento}
+                                                onChange={(e) => setFormContaFixa({...formContaFixa, vencimento: e.target.value})}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Total de Parcelas</label>
+                                            <input 
+                                                type="number"
+                                                value={formContaFixa.parcelas}
+                                                onChange={(e) => setFormContaFixa({...formContaFixa, parcelas: e.target.value})}
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Parcela Atual</label>
+                                            <input 
+                                                type="number"
+                                                value={formContaFixa.parcelaAtual}
+                                                onChange={(e) => setFormContaFixa({...formContaFixa, parcelaAtual: e.target.value})}
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <button type="submit">Adicionar Conta</button>
+                                </form>
+                            </div>
+
+                            <div className="card">
+                                <h2>Contas Fixas e Parcelas</h2>
+                                <div className="stats-grid" style={{marginBottom: '30px'}}>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Total Mensal</div>
+                                        <div className="stat-value">{formatarMoeda(totalContasFixas)}</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-label">Quantidade de Contas</div>
+                                        <div className="stat-value">{contasFixas.length}</div>
+                                    </div>
+                                </div>
+                                {contasFixas.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">📋</div>
+                                        <p>Nenhuma conta fixa cadastrada</p>
+                                    </div>
+                                ) : (
+                                    contasFixas.map(conta => (
+                                        <div key={conta.id} className="transaction-item">
+                                            <div className="transaction-info">
+                                                <div className="transaction-description">
+                                                    {conta.descricao}
+                                                </div>
+                                                <div className="transaction-meta">
+                                                    <span className="category-badge">
+                                                        {conta.parcelaAtual}/{conta.parcelas} parcelas
+                                                    </span>
+                                                    <span>Vencimento: {new Date(conta.vencimento).toLocaleDateString('pt-BR')}</span>
+                                                </div>
+                                            </div>
+                                            <div style={{display: 'flex', alignItems: 'center'}}>
+                                                <div className="transaction-amount">
+                                                    {formatarMoeda(conta.valor)}
+                                                </div>
+                                                <button 
+                                                    className="delete-btn"
+                                                    onClick={() => deletarContaFixa(conta.id)}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'reserva' && (
+                        <>
+                            <div className="card">
+                                <h2>Reserva de Emergência</h2>
+                                <div className="stat-card" style={{marginBottom: '30px'}}>
+                                    <div className="stat-label">Saldo Atual</div>
+                                    <div className="stat-value" style={{fontSize: '3em'}}>
+                                        {formatarMoeda(reservaEmergencia)}
+                                    </div>
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label>Adicionar/Remover Valor</label>
+                                    <input 
+                                        type="number"
+                                        step="0.01"
+                                        id="valorReserva"
+                                        placeholder="Use valor negativo para remover"
+                                    />
+                                </div>
+                                <div style={{display: 'flex', gap: '10px'}}>
+                                    <button onClick={() => {
+                                        const valor = parseFloat(document.getElementById('valorReserva').value);
+                                        if (!isNaN(valor)) {
+                                            setReservaEmergencia(reservaEmergencia + valor);
+                                            document.getElementById('valorReserva').value = '';
+                                        }
+                                    }}>
+                                        Atualizar Reserva
+                                    </button>
+                                    <button 
+                                        className="button-secondary"
+                                        onClick={() => {
+                                            if (confirm('Tem certeza que deseja zerar a reserva?')) {
+                                                setReservaEmergencia(0);
+                                            }
+                                        }}
+                                    >
+                                        Zerar Reserva
+                                    </button>
+                                </div>
+
+                                <div style={{marginTop: '40px', padding: '20px', background: 'rgba(138, 43, 226, 0.1)', borderRadius: '12px'}}>
+                                    <h3 style={{color: '#da70d6', marginBottom: '15px'}}>💡 Dica de Reserva de Emergência</h3>
+                                    <p style={{color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6'}}>
+                                        É recomendado ter entre 3 a 6 meses de despesas guardadas. 
+                                        Com seus gastos mensais atuais de <strong>{formatarMoeda(totalMes)}</strong>, 
+                                        sua meta ideal seria entre <strong>{formatarMoeda(totalMes * 3)}</strong> e <strong>{formatarMoeda(totalMes * 6)}</strong>.
+                                    </p>
+                                    {reservaEmergencia > 0 && (
+                                        <p style={{color: '#da70d6', marginTop: '15px', fontWeight: '600'}}>
+                                            Você já tem {((reservaEmergencia / (totalMes * 3)) * 100).toFixed(1)}% da meta mínima! 🎉
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
+            );
+        }
 
-                <div className="form-group">
-                  <label>Valor (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="valor"
-                    value={form.valor}
-                    onChange={handleInputChange}
-                    placeholder="0,00"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Categoria</label>
-                  <select name="categoria" value={form.categoria} onChange={handleInputChange}>
-                    {categoriasPadrao.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Forma de pagamento</label>
-                  <select name="forma" value={form.forma} onChange={handleInputChange}>
-                    {formasPadrao.map((forma) => (
-                      <option key={forma} value={forma}>
-                        {forma.charAt(0).toUpperCase() + forma.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button type="submit" className="btn">
-                  Registrar Gasto
-                </button>
-              </form>
-            </div>
-
-            {/* Contas fixas / parcelas */}
-            <div className="card sep">
-              <h2 className="title">Contas Fixas e Parcelas</h2>
-              <form onSubmit={handleSubmitFixa}>
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <div className="form-group" style={{ flexGrow: 1 }}>
-                    <label>Descrição</label>
-                    <input
-                      type="text"
-                      value={formFixa.descricao}
-                      onChange={(e) =>
-                        setFormFixa((prev) => ({ ...prev, descricao: e.target.value }))
-                      }
-                      placeholder="Aluguel, internet, etc."
-                      required
-                    />
-                  </div>
-                  <div className="form-group" style={{ flexGrow: 1 }}>
-                    <label>Valor (R$)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formFixa.valor}
-                      onChange={(e) =>
-                        setFormFixa((prev) => ({ ...prev, valor: e.target.value }))
-                      }
-                      placeholder="0,00"
-                      required
-                    />
-                  </div>
-                  <div className="form-group" style={{ flexGrow: 1 }}>
-                    <label>Vencimento</label>
-                    <input
-                      type="text"
-                      value={formFixa.vencimento}
-                      onChange={(e) =>
-                        setFormFixa((prev) => ({ ...prev, vencimento: e.target.value }))
-                      }
-                      placeholder="DD/MM"
-                      required
-                    />
-                  </div>
-                </div>
-                <button type="submit" className="btn">
-                  Adicionar Conta Fixa
-                </button>
-              </form>
-
-              <div style={{ marginTop: "1rem" }}>
-                {contasFixas.map((conta) => (
-                  <div key={conta.id} className="list-item">
-                    <span>
-                      {conta.descricao} - R$ {conta.valor.toFixed(2)} (vence: {conta.vencimento})
-                    </span>
-                    <button className="btn" onClick={() => excluirFixa(conta.id)}>
-                      Excluir
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Resumo semanal */}
-            <div className="card">
-              <h2 className="title">Resumo da Semana</h2>
-              <p>
-                <strong>Total gasto na semana: R$ {valorGastoSemana.toFixed(2)}</strong>
-              </p>
-
-              {categoriasOrdenadas.length > 0 && (
-                <div style={{ marginTop: "0.8rem" }}>
-                  <p className="subtitle">Maiores gastos por categoria:</p>
-                  <ul style={{ listStyle: "none", padding: 0 }}>
-                    {categoriasOrdenadas.map(([cat, valor]) => (
-                      <li key={cat} className="list-item">
-                        <span>
-                          {cat.charAt(0).toUpperCase() + cat.slice(1)}: R$ {valor.toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Resumo mensal */}
-            <div className="card">
-              <h2 className="title">Resumo Mensal</h2>
-              <p>
-                <strong>Total gasto no mês: R$ {valorGastoMes.toFixed(2)}</strong>
-              </p>
-            </div>
-
-            {/* Histórico completo de gastos */}
-            <div className="card">
-              <h2 className="title">Histórico de Gastos</h2>
-              <div>
-                {transacoes.length === 0 ? (
-                  <p style={{ color: "#aaa" }}>Nenhum gasto registrado ainda.</p>
-                ) : (
-                  <ul style={{ listStyle: "none", padding: 0 }}>
-                    {transacoes
-                      .slice()
-                      .reverse()
-                      .map((t) => (
-                        <li key={t.id} className="list-item">
-                          <span>
-                            <strong>{t.descricao}</strong> - R$ {t.valor.toFixed(2)} (
-                            {t.categoria || "outros"}){" "}
-                            <span className="category-tag">{t.forma}</span>
-                          </span>
-                          <button
-                            className="btn"
-                            onClick={() => excluirTransacao(t.id)}
-                            style={{ width: "60px" }}
-                          >
-                            Excluir
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
-  </body>
+</body>
 </html>
