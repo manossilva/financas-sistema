@@ -14,54 +14,91 @@
 
     <style>
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: #000;
+        color: #fff;
+        margin: 0;
         padding: 1rem;
-        background-color: #f9f9f9;
       }
       .app {
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
       }
-      .box {
-        border: 1px solid #ccc;
+      .card {
+        background: #111;
+        border: 1px solid #222;
+        border-radius: 12px;
         padding: 1rem;
         margin: 1rem 0;
-        background-color: #fff;
+      }
+      .purple {
+        color: #bf94ff;
+      }
+      .title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+      .subtitle {
+        font-size: 1rem;
+        color: #aaa;
+        margin-bottom: 1rem;
       }
       .form-group {
-        margin: 1rem 0;
+        margin: 0.8rem 0;
       }
       .form-group label {
         display: block;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
+        font-size: 0.9rem;
+        color: #ddd;
       }
-      .form-group input {
+      .form-group input,
+      .form-group select {
         width: 100%;
-        padding: 0.5rem;
-        box-sizing: border-box;
-      }
-      .radio-group {
-        margin: 0.5rem 0;
+        padding: 0.6rem;
+        border-radius: 6px;
+        border: 1px solid #444;
+        background: #222;
+        color: #fff;
       }
       .btn {
-        padding: 0.5rem 1rem;
-        background-color: #007bff;
+        padding: 0.6rem 1rem;
+        background: #9933ff;
         color: #fff;
         border: none;
-        cursor: pointer;
-      }
-      .btn-danger {
-        background-color: #dc3545;
-        padding: 0.2rem 0.5rem;
-        border: none;
+        border-radius: 6px;
         cursor: pointer;
         font-size: 0.9rem;
       }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       .list-item {
-        border-bottom: 1px solid #eee;
-        padding: 0.5rem 0;
+        border-bottom: 1px solid #333;
+        padding: 0.6rem 0;
         display: flex;
         justify-content: space-between;
+        align-items: center;
+      }
+      .category-tag {
+        background: #9933ff;
+        color: #fff;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+      }
+      .week-month-box {
+        background: #181818;
+        border-radius: 8px;
+        padding: 0.8rem;
+      }
+      .sep {
+        margin: 1rem 0;
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
       }
     </style>
   </head>
@@ -69,142 +106,371 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      // Função de componente principal
-      function App() {
-        const [transacoes, setTransacoes] = React.useState([
-          { id: 1, descricao: "Salário", valor: 2000, tipo: "entrada" },
-          { id: 2, descricao: "Aluguel", valor: 800, tipo: "saida" },
-        ]);
-        const [descricao, setDescricao] = React.useState("");
-        const [valor, setValor] = React.useState("");
-        const [tipo, setTipo] = React.useState("saida");
+      const App = () => {
+        const [transacoes, setTransacoes] = React.useState([]);
+        const [reserva, setReserva] = React.useState(0);
+        const [contasFixas, setContasFixas] = React.useState([]);
+        const [form, setForm] = React.useState({
+          descricao: "",
+          valor: "",
+          categoria: "outros",
+          forma: "dinheiro",
+        });
 
-        // Cálculos
+        const categoriasPadrao = ["alimentação", "transporte", "lazer", "moradia", "saúde", "outros"];
+        const formasPadrao = ["dinheiro", "pix", "cartão de crédito", "cartão de débito", "boleto"];
+
+        React.useEffect(() => {
+          const salvo = localStorage.getItem("transacoes");
+          if (salvo) setTransacoes(JSON.parse(salvo));
+          const salvoReserva = localStorage.getItem("reserva");
+          if (salvoReserva) setReserva(parseFloat(salvoReserva));
+          const salvoContasFixas = localStorage.getItem("contasFixas");
+          if (salvoContasFixas) setContasFixas(JSON.parse(salvoContasFixas));
+        }, []);
+
+        const salvarNoLocal = React.useCallback(() => {
+          localStorage.setItem("transacoes", JSON.stringify(transacoes));
+          localStorage.setItem("reserva", reserva.toString());
+          localStorage.setItem("contasFixas", JSON.stringify(contasFixas));
+        }, [transacoes, reserva, contasFixas]);
+
+        React.useEffect(() => {
+          salvarNoLocal();
+        }, [transacoes, reserva, contasFixas, salvarNoLocal]);
+
+        const hoje = new Date();
+
+        // Filtros por período
+        const filtrarPorPeriodo = (arr, inicio, fim) =>
+          arr.filter((t) => {
+            const data = new Date(t.data || hoje);
+            return data >= inicio && data <= fim;
+          });
+
+        const inicioSemana = new Date(hoje);
+        inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+        const fimSemana = new Date(hoje);
+        fimSemana.setDate(hoje.getDate() + (6 - hoje.getDay()));
+
+        const transacoesSemana = filtrarPorPeriodo(transacoes, inicioSemana, fimSemana);
+
+        const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+        const transacoesMes = filtrarPorPeriodo(transacoes, inicioMes, fimMes);
+
+        // Entradas vs Saídas
         const totalEntradas = transacoes
-          .filter((t) => t.tipo === "entrada")
+          .filter((t) => t.entrada)
           .reduce((acc, t) => acc + t.valor, 0);
-
         const totalSaidas = transacoes
-          .filter((t) => t.tipo === "saida")
+          .filter((t) => !t.entrada)
           .reduce((acc, t) => acc + t.valor, 0);
-
         const saldo = totalEntradas - totalSaidas;
 
-        const adicionarTransacao = (e) => {
+        // Maiores gastos por categoria
+        const gastosPorCategoria = {};
+        transacoesSemana.forEach((t) => {
+          if (!t.entrada) {
+            const categ = t.categoria || "outros";
+            gastosPorCategoria[categ] = (gastosPorCategoria[categ] || 0) + t.valor;
+          }
+        });
+        const categoriasOrdenadas = Object.entries(gastosPorCategoria)
+          .sort((a, b) => b[1] - a[1]);
+
+        // Semana e mês
+        const valorGastoSemana = transacoesSemana
+          .filter((t) => !t.entrada)
+          .reduce((acc, t) => acc + t.valor, 0);
+        const valorGastoMes = transacoesMes
+          .filter((t) => !t.entrada)
+          .reduce((acc, t) => acc + t.valor, 0);
+
+        const handleInputChange = (e) => {
+          const { name, value } = e.target;
+          setForm((prev) => ({ ...prev, [name]: value }));
+        };
+
+        const handleSubmitGasto = (e) => {
           e.preventDefault();
+          const valor = parseFloat(form.valor);
+          if (!valor || !form.descricao) return;
           const novaTransacao = {
             id: Date.now(),
-            descricao,
-            valor: parseFloat(valor) || 0,
-            tipo,
+            descricao: form.descricao,
+            valor,
+            categoria: form.categoria,
+            forma: form.forma,
+            entrada: false,
+            data: hoje.toISOString().split("T")[0],
           };
           setTransacoes((prev) => [...prev, novaTransacao]);
-          setDescricao("");
-          setValor("");
-          setTipo("saida");
+          setForm({ descricao: "", valor: "", categoria: "outros", forma: "dinheiro" });
         };
 
         const excluirTransacao = (id) => {
           setTransacoes((prev) => prev.filter((t) => t.id !== id));
         };
 
+        // Contas fixas
+        const [formFixa, setFormFixa] = React.useState({
+          descricao: "",
+          valor: "",
+          vencimento: "", // DD/MM
+        });
+
+        const handleSubmitFixa = (e) => {
+          e.preventDefault();
+          const valor = parseFloat(formFixa.valor);
+          if (!valor || !formFixa.descricao || !formFixa.vencimento) return;
+          const conta = {
+            id: Date.now(),
+            ...formFixa,
+            valor,
+          };
+          setContasFixas((prev) => [...prev, conta]);
+          setFormFixa({ descricao: "", valor: "", vencimento: "" });
+        };
+
+        const excluirFixa = (id) => {
+          setContasFixas((prev) => prev.filter((t) => t.id !== id));
+        };
+
         return (
           <div className="app">
             <header>
-              <h1>Organizador Financeiro</h1>
+              <h1 className="purple">Organizador Financeiro</h1>
+              <p className="subtitle">
+                Controle de gastos diários, reservas e contas fixas
+              </p>
             </header>
 
-            {/* Resumo */}
-            <div className="box">
-              <h2>Resumo Financeiro</h2>
-              <p>Entradas: R$ {totalEntradas.toFixed(2)}</p>
-              <p>Saídas: R$ {totalSaidas.toFixed(2)}</p>
-              <p>
-                <strong>Saldo: R$ {saldo.toFixed(2)}</strong>
-              </p>
+            {/* Resumo principal */}
+            <div className="card">
+              <h2 className="title">Resumo Geral</h2>
+
+              <div className="week-month-box">
+                <p>
+                  Entradas: <strong>R$ {totalEntradas.toFixed(2)}</strong>
+                </p>
+                <p>
+                  Saídas: <strong className="purple">R$ {totalSaidas.toFixed(2)}</strong>
+                </p>
+                <p>
+                  Saldo:{" "}
+                  <strong
+                    className={saldo >= 0 ? "purple" : "red"}
+                    style={{ color: saldo >= 0 ? "#bf94ff" : "#ff7777" }}
+                  >
+                    R$ {saldo.toFixed(2)}
+                  </strong>
+                </p>
+              </div>
             </div>
 
-            {/* Formulário */}
-            <form className="box" onSubmit={adicionarTransacao}>
-              <h2>Adicionar Lançamento</h2>
-
-              <div className="form-group">
-                <label>Descrição</label>
-                <input
-                  type="text"
-                  value={descricao}
-                  onChange={(e) => setDescricao(e.target.value)}
-                  placeholder="Ex.: mercado, salário"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Valor</label>
+            {/* Reserva de emergência */}
+            <div className="card">
+              <h2 className="title">Reserva de Emergência</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <input
                   type="number"
                   step="0.01"
-                  value={valor}
-                  onChange={(e) => setValor(e.target.value)}
+                  value={reserva || ""}
+                  onChange={(e) => setReserva(parseFloat(e.target.value) || 0)}
                   placeholder="R$ 0,00"
-                  required
+                  style={{ width: "200px" }}
                 />
+                <span style={{ color: "#aaa" }}>definida</span>
               </div>
+            </div>
 
-              <div className="radio-group">
-                <label>
+            {/* Formulário de gasto diário */}
+            <div className="card">
+              <h2 className="title">Lançar Gasto Diário</h2>
+              <form onSubmit={handleSubmitGasto}>
+                <div className="form-group">
+                  <label>Descrição</label>
                   <input
-                    type="radio"
-                    name="tipo"
-                    value="entrada"
-                    checked={tipo === "entrada"}
-                    onChange={() => setTipo("entrada")}
-                  />{" "}
-                  Entrada
-                </label>{" "}
-                <label>
+                    type="text"
+                    name="descricao"
+                    value={form.descricao}
+                    onChange={handleInputChange}
+                    placeholder="Ex.: mercado, supermercado, energia"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Valor (R$)</label>
                   <input
-                    type="radio"
-                    name="tipo"
-                    value="saida"
-                    checked={tipo === "saida"}
-                    onChange={() => setTipo("saida")}
-                  />{" "}
-                  Saída
-                </label>
-              </div>
+                    type="number"
+                    step="0.01"
+                    name="valor"
+                    value={form.valor}
+                    onChange={handleInputChange}
+                    placeholder="0,00"
+                    required
+                  />
+                </div>
 
-              <button type="submit" className="btn">
-                Adicionar Lançamento
-              </button>
-            </form>
+                <div className="form-group">
+                  <label>Categoria</label>
+                  <select name="categoria" value={form.categoria} onChange={handleInputChange}>
+                    {categoriasPadrao.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Histórico */}
-            <div className="box">
-              <h2>Histórico de Lançamentos</h2>
-              <div>
-                {transacoes.map((t) => (
-                  <div key={t.id} className="list-item">
+                <div className="form-group">
+                  <label>Forma de pagamento</label>
+                  <select name="forma" value={form.forma} onChange={handleInputChange}>
+                    {formasPadrao.map((forma) => (
+                      <option key={forma} value={forma}>
+                        {forma.charAt(0).toUpperCase() + forma.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button type="submit" className="btn">
+                  Registrar Gasto
+                </button>
+              </form>
+            </div>
+
+            {/* Contas fixas / parcelas */}
+            <div className="card sep">
+              <h2 className="title">Contas Fixas e Parcelas</h2>
+              <form onSubmit={handleSubmitFixa}>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <div className="form-group" style={{ flexGrow: 1 }}>
+                    <label>Descrição</label>
+                    <input
+                      type="text"
+                      value={formFixa.descricao}
+                      onChange={(e) =>
+                        setFormFixa((prev) => ({ ...prev, descricao: e.target.value }))
+                      }
+                      placeholder="Aluguel, internet, etc."
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ flexGrow: 1 }}>
+                    <label>Valor (R$)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formFixa.valor}
+                      onChange={(e) =>
+                        setFormFixa((prev) => ({ ...prev, valor: e.target.value }))
+                      }
+                      placeholder="0,00"
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ flexGrow: 1 }}>
+                    <label>Vencimento</label>
+                    <input
+                      type="text"
+                      value={formFixa.vencimento}
+                      onChange={(e) =>
+                        setFormFixa((prev) => ({ ...prev, vencimento: e.target.value }))
+                      }
+                      placeholder="DD/MM"
+                      required
+                    />
+                  </div>
+                </div>
+                <button type="submit" className="btn">
+                  Adicionar Conta Fixa
+                </button>
+              </form>
+
+              <div style={{ marginTop: "1rem" }}>
+                {contasFixas.map((conta) => (
+                  <div key={conta.id} className="list-item">
                     <span>
-                      {t.descricao} - R$ {t.valor.toFixed(2)} ({t.tipo})
+                      {conta.descricao} - R$ {conta.valor.toFixed(2)} (vence: {conta.vencimento})
                     </span>
-                    <button
-                      className="btn-danger"
-                      onClick={() => excluirTransacao(t.id)}
-                    >
+                    <button className="btn" onClick={() => excluirFixa(conta.id)}>
                       Excluir
                     </button>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Resumo semanal */}
+            <div className="card">
+              <h2 className="title">Resumo da Semana</h2>
+              <p>
+                <strong>Total gasto na semana: R$ {valorGastoSemana.toFixed(2)}</strong>
+              </p>
+
+              {categoriasOrdenadas.length > 0 && (
+                <div style={{ marginTop: "0.8rem" }}>
+                  <p className="subtitle">Maiores gastos por categoria:</p>
+                  <ul style={{ listStyle: "none", padding: 0 }}>
+                    {categoriasOrdenadas.map(([cat, valor]) => (
+                      <li key={cat} className="list-item">
+                        <span>
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}: R$ {valor.toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Resumo mensal */}
+            <div className="card">
+              <h2 className="title">Resumo Mensal</h2>
+              <p>
+                <strong>Total gasto no mês: R$ {valorGastoMes.toFixed(2)}</strong>
+              </p>
+            </div>
+
+            {/* Histórico completo de gastos */}
+            <div className="card">
+              <h2 className="title">Histórico de Gastos</h2>
+              <div>
+                {transacoes.length === 0 ? (
+                  <p style={{ color: "#aaa" }}>Nenhum gasto registrado ainda.</p>
+                ) : (
+                  <ul style={{ listStyle: "none", padding: 0 }}>
+                    {transacoes
+                      .slice()
+                      .reverse()
+                      .map((t) => (
+                        <li key={t.id} className="list-item">
+                          <span>
+                            <strong>{t.descricao}</strong> - R$ {t.valor.toFixed(2)} (
+                            {t.categoria || "outros"}){" "}
+                            <span className="category-tag">{t.forma}</span>
+                          </span>
+                          <button
+                            className="btn"
+                            onClick={() => excluirTransacao(t.id)}
+                            style={{ width: "60px" }}
+                          >
+                            Excluir
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
         );
-      }
+      };
 
-      // Renderização
-      const container = document.getElementById("root");
-      const root = ReactDOM.createRoot(container);
+      const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<App />);
     </script>
   </body>
