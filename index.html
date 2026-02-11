@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Pessoais - Conectado</title>
+    <title>Finanças Pessoais - Pro V2 (Conectado)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -45,9 +45,11 @@
         .tab:hover { color: var(--primary); background-color: #eff6ff; }
         .tab.active { color: var(--primary); background-color: #eff6ff; font-weight: 600; }
 
-        /* Cards & Stats */
+        /* Cards */
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .card h2 { font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+
+        /* Dashboard Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; }
         .stat-label { font-size: 13px; color: var(--secondary); margin-bottom: 8px; }
@@ -55,18 +57,20 @@
         .stat-value.positive { color: var(--success); }
         .stat-value.negative { color: var(--danger); }
 
-        /* Bars & Forms */
+        /* Category Bars */
         .category-bar-item { margin-bottom: 15px; }
         .category-header { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
         .category-progress-bg { background: #f1f5f9; height: 8px; border-radius: 4px; overflow: hidden; }
         .category-progress-fill { height: 100%; border-radius: 4px; background: var(--primary); }
+
+        /* Forms */
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--secondary); }
         input, select, textarea { width: 100%; padding: 10px 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; transition: border-color 0.2s; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
-        /* Buttons & Items */
+        /* Buttons */
         .btn-primary { padding: 12px 24px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
         .btn-primary:hover { background-color: var(--primary-dark); }
         .btn-ghost { background: transparent; color: var(--secondary); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 10px; width: 100%; }
@@ -76,6 +80,8 @@
         .btn-icon:hover.edit { background: #eff6ff; color: var(--primary); }
         .btn-icon.check { color: #cbd5e1; }
         .btn-icon.check.paid { color: #10b981; background: #d1fae5; }
+
+        /* List Items */
         .transaction-item { background: var(--bg-body); padding: 16px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: border 0.2s; }
         .transaction-item:hover { border-color: var(--border); }
         .transaction-info { flex: 1; }
@@ -83,17 +89,20 @@
         .transaction-meta { font-size: 12px; color: var(--secondary); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;}
         .transaction-amount { font-weight: 600; font-size: 15px; white-space: nowrap; }
 
-        /* Badges & Utilities */
+        /* Badges */
         .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
         .badge-pf { background: #e0f2fe; color: #0369a1; }
         .badge-pj { background: #fef3c7; color: #b45309; }
         .badge-cat { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
         .badge-paid { background: #d1fae5; color: #059669; }
+
+        /* Icons */
         .icon { width: 18px; height: 18px; stroke-width: 2; }
         
-        /* Modal & Links */
+        /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        
         .login-link { color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 600; margin-top: 15px; display: inline-block; cursor: pointer; }
         .login-link:hover { text-decoration: underline; }
     </style>
@@ -105,11 +114,10 @@
         const { useState, useEffect, useMemo } = React;
         const { createClient } = supabase;
 
-        // --- SUAS CREDENCIAIS DO SUPABASE ---
+        // --- CONFIGURAÇÃO SUPABASE ---
         const SUPABASE_URL = 'https://hcdsbawdwzmlujxnxymf.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZHNiYXdkd3ptbHVqeG54eW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTgzMjksImV4cCI6MjA4NTI3NDMyOX0.wqZvGYlLeU-CIcikwKFauTCwmSH1VvJuVpccca3wpaU';
         
-        // Inicializa o cliente do Supabase
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- Ícones SVG ---
@@ -127,45 +135,59 @@
         const IconHistory = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
         const IconSearch = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 
-        const CATEGORIAS_GASTOS = ["Alimentação", "Mercado", "Moradia", "Transporte", "Saúde", "Lazer", "Educação", "Assinaturas", "Farmácia", "Casa", "Pets", "Roupas", "Viagem", "Presentes", "Impostos", "Investimento", "Escritório", "Marketing", "Outros"];
+        const CATEGORIAS_GASTOS = [
+            "Alimentação", "Mercado", "Moradia", "Transporte", 
+            "Saúde", "Lazer", "Educação", "Assinaturas", 
+            "Farmácia", "Casa", "Pets", "Roupas", 
+            "Viagem", "Presentes", "Impostos", "Investimento", 
+            "Escritório", "Marketing", "Outros"
+        ];
 
         function App() {
-            // -- ESTADOS DE SESSÃO E LOGIN --
-            const [session, setSession] = useState(null);
-            const [loadingLogin, setLoadingLogin] = useState(false);
+            // Estados Globais de Sessão
+            const [session, setSession] = useState(null); 
+            const [loading, setLoading] = useState(false);
+
+            // Inputs de Login
             const [loginEmail, setLoginEmail] = useState('');
             const [loginPass, setLoginPass] = useState('');
 
-            // -- ESTADOS DE DADOS --
+            // Estados de Dados
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
+            const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+            
             const [receitas, setReceitas] = useState([]);
             const [gastos, setGastos] = useState([]);
             const [contasFixas, setContasFixas] = useState([]);
             const [dividas, setDividas] = useState([]);
             const [anotacoes, setAnotacoes] = useState([]);
+            const [reservaEmergencia, setReservaEmergencia] = useState(0);
+
+            // Estados Histórico
             const [historySearch, setHistorySearch] = useState('');
 
-            // -- MODAIS E FORMS --
+            // Modal Dívida
             const [modalDividaOpen, setModalDividaOpen] = useState(false);
             const [dividaSelecionada, setDividaSelecionada] = useState(null);
             const [valorPagamentoInput, setValorPagamentoInput] = useState('');
             const [novaParcelaInput, setNovaParcelaInput] = useState('');
 
+            // Formulários
             const [formReceita, setFormReceita] = useState({ descricao: '', valor: '', tipo: 'PF', data: new Date().toISOString().split('T')[0] });
             const [formGasto, setFormGasto] = useState({ descricao: '', valor: '', categoria: 'Alimentação', data: new Date().toISOString().split('T')[0] });
             const [formContaFixa, setFormContaFixa] = useState({ descricao: '', valor: '', vencimento: '' });
             const [formDivida, setFormDivida] = useState({ descricao: '', valorTotal: '', valorPago: '', parcelas: 1, parcelaAtual: 1 });
             const [formAnotacao, setFormAnotacao] = useState('');
 
-            // --- INICIALIZAÇÃO E AUTH ---
+            // --- AUTH E INICIALIZAÇÃO ---
             useEffect(() => {
-                // Verificar se já existe sessão ativa
+                // Verificar sessão ativa
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
                     if (session) loadLocalData();
                 });
 
+                // Escutar mudanças de Auth
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
                     if (session) loadLocalData();
@@ -176,34 +198,33 @@
 
             const handleLogin = async (e) => {
                 e.preventDefault();
-                setLoadingLogin(true);
+                setLoading(true);
                 try {
                     const { data, error } = await supabaseClient.auth.signInWithPassword({
                         email: loginEmail,
                         password: loginPass,
                     });
                     if (error) throw error;
-                    // Sessão é atualizada automaticamente pelo listener acima
+                    // Sucesso: O useEffect acima captura a sessão automaticamente
                 } catch (error) {
-                    alert('Erro no login: ' + error.message);
+                    alert('Erro ao logar: ' + error.message);
                 } finally {
-                    setLoadingLogin(false);
+                    setLoading(false);
                 }
             };
 
             const handleLogout = async () => {
                 await supabaseClient.auth.signOut();
-                setReceitas([]); setGastos([]); // Limpa visualização
+                // Limpa a tela (opcional, já que os dados estão no localStorage, eles reaparecem ao logar)
+                setReceitas([]); setGastos([]);
             };
 
-            const handleSignUp = async (e) => {
+            const handleSolicitarLogin = (e) => {
                 e.preventDefault();
-                alert("Para cadastrar, use o painel do Supabase ou implemente a função signUp.");
-            }
+                alert("Entre em contato com o administrador para criar sua conta.");
+            };
 
-            // --- DADOS (LOCAL STORAGE POR ENQUANTO) ---
-            // Nota: Estamos usando LocalStorage para garantir que o app funcione sem tabelas SQL.
-            // Para salvar na nuvem, seria necessário criar as tabelas no Supabase.
+            // --- DATA LOADING & SAVING (LOCAL STORAGE) ---
             const loadLocalData = () => {
                 const get = (k) => JSON.parse(localStorage.getItem(k) || '[]');
                 setReceitas(get('receitas'));
@@ -211,6 +232,7 @@
                 setContasFixas(get('contasFixas'));
                 setDividas(get('dividas'));
                 setAnotacoes(get('anotacoes'));
+                setReservaEmergencia(parseFloat(localStorage.getItem('reservaEmergencia') || '0'));
             };
 
             useEffect(() => {
@@ -220,92 +242,162 @@
                 localStorage.setItem('contasFixas', JSON.stringify(contasFixas));
                 localStorage.setItem('dividas', JSON.stringify(dividas));
                 localStorage.setItem('anotacoes', JSON.stringify(anotacoes));
-            }, [receitas, gastos, contasFixas, dividas, anotacoes, session]);
+                localStorage.setItem('reservaEmergencia', reservaEmergencia.toString());
+            }, [receitas, gastos, contasFixas, dividas, anotacoes, reservaEmergencia, session]);
 
-            // --- HELPER FUNCTIONS ---
-            const addItem = (setter, list, item) => setter([...list, { id: Date.now(), ...item, valor: parseFloat(item.valor) }]);
-            const delItem = (setter, list, id) => setter(list.filter(i => i.id !== id));
-            const filterByMonth = (items) => items.filter(item => item.data ? item.data.startsWith(currentMonth) : true);
-            const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
-            const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
 
-            // --- CÁLCULOS ---
+            // --- LÓGICA DE CONTAS FIXAS (PAGAMENTOS) ---
+            const toggleContaFixaPaga = (id) => {
+                setContasFixas(contasFixas.map(conta => {
+                    if (conta.id === id) {
+                        const pagamentos = conta.pagamentos || [];
+                        const jaPago = pagamentos.includes(currentMonth);
+                        const novosPagamentos = jaPago 
+                            ? pagamentos.filter(mes => mes !== currentMonth) 
+                            : [...pagamentos, currentMonth];
+                        return { ...conta, pagamentos: novosPagamentos };
+                    }
+                    return conta;
+                }));
+            };
+
+            // --- FILTROS & CÁLCULOS ---
+            const filterByMonth = (items) => {
+                return items.filter(item => {
+                    if (item.data) return item.data.startsWith(currentMonth);
+                    return true;
+                });
+            };
+
             const receitasMes = filterByMonth(receitas);
             const gastosMes = filterByMonth(gastos);
             
-            const totalReceitas = receitasMes.reduce((acc, r) => acc + r.valor, 0);
-            const totalGastos = gastosMes.reduce((acc, g) => acc + g.valor, 0);
-            
-            const totalContasPagas = contasFixas.reduce((acc, c) => ((c.pagamentos || []).includes(currentMonth)) ? acc + c.valor : acc, 0);
-            const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + c.valor, 0);
-            
-            const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
-
+            // Dados para Histórico (Unificado)
             const historicoMes = useMemo(() => {
                 const list = [
                     ...receitasMes.map(r => ({...r, type: 'receita'})),
-                    ...gastosMes.map(g => ({...g, type: 'gasto'}))
+                    ...gastosMes.map(g => ({...g, type: 'gasto'})),
+                    ...contasFixas.filter(c => (c.pagamentos || []).includes(currentMonth)).map(c => ({
+                        id: c.id + '_fixed',
+                        descricao: c.descricao,
+                        valor: c.valor,
+                        data: c.vencimento ? `${currentMonth}-${c.vencimento.split('-')[2]}` : `${currentMonth}-01`, 
+                        categoria: 'Conta Fixa',
+                        type: 'fixa'
+                    }))
                 ];
+                
+                const termo = historySearch.toLowerCase();
                 return list.filter(item => 
-                    item.descricao.toLowerCase().includes(historySearch.toLowerCase())
-                ).sort((a, b) => new Date(b.data) - new Date(a.data));
-            }, [receitasMes, gastosMes, historySearch]);
+                    item.descricao.toLowerCase().includes(termo) || 
+                    (item.categoria && item.categoria.toLowerCase().includes(termo)) ||
+                    item.valor.toString().includes(termo)
+                ).sort((a, b) => new Date(b.data || currentMonth) - new Date(a.data || currentMonth));
 
+            }, [receitasMes, gastosMes, contasFixas, currentMonth, historySearch]);
+
+
+            const totalReceitas = receitasMes.reduce((acc, r) => acc + r.valor, 0);
+            const totalGastos = gastosMes.reduce((acc, g) => acc + g.valor, 0);
+            const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + c.valor, 0);
+            const totalContasPagas = contasFixas.reduce((acc, c) => {
+                return ((c.pagamentos || []).includes(currentMonth)) ? acc + c.valor : acc;
+            }, 0);
+
+            const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
+            
+            // Análise de Categorias
             const gastosPorCategoria = useMemo(() => {
                 const group = {};
                 gastosMes.forEach(g => group[g.categoria] = (group[g.categoria] || 0) + g.valor);
-                if (totalContasPagas > 0) group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
-                return Object.entries(group).map(([cat, val]) => ({ categoria: cat, valor: val })).sort((a, b) => b.valor - a.valor);
+                if (totalContasPagas > 0) {
+                    group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
+                }
+                return Object.entries(group)
+                    .map(([cat, val]) => ({ categoria: cat, valor: val }))
+                    .sort((a, b) => b.valor - a.valor);
             }, [gastosMes, totalContasPagas]);
+
+            // Handlers
+            const addItem = (setter, list, item) => setter([...list, { id: Date.now(), ...item, valor: parseFloat(item.valor) }]);
+            const delItem = (setter, list, id) => setter(list.filter(i => i.id !== id));
+            
+            const handleAddGasto = (e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto); setFormGasto({...formGasto, descricao: '', valor: ''}); };
+            const handleAddReceita = (e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita); setFormReceita({...formReceita, descricao: '', valor: ''}); };
+            const adicionarAnotacao = (e) => { e.preventDefault(); addItem(setAnotacoes, anotacoes, { conteudo: formAnotacao, data: new Date().toISOString() }); setFormAnotacao(''); };
+            
+            const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+            const fmtDate = (d) => {
+                if (!d) return '-';
+                if (d.length === 7) return d; 
+                return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+            };
 
             // --- VIEW: LOGIN ---
             if (!session) {
                 return (
                     <div className="login-container">
                         <div className="login-card">
-                            <div className="login-logo"><IconWallet style={{width: 60, height: 60}} /></div>
-                            <h2>Bem-vindo</h2>
-                            <p style={{marginBottom: 30, color: 'var(--secondary)'}}>Entre com sua conta Supabase</p>
+                            <div className="login-logo">
+                                <IconWallet style={{width: 60, height: 60}} />
+                            </div>
+                            <h2 style={{marginBottom: 10, color: 'var(--text-main)'}}>Finanças Pro</h2>
+                            <p style={{marginBottom: 30, color: 'var(--secondary)'}}>Entre para acessar suas finanças</p>
+
                             <form onSubmit={handleLogin}>
-                                <div className="form-group">
+                                <div className="form-group" style={{textAlign:'left'}}>
                                     <label>Email</label>
-                                    <input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="email@exemplo.com" />
+                                    <input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="seu@email.com" />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group" style={{textAlign:'left'}}>
                                     <label>Senha</label>
                                     <input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="******" />
                                 </div>
-                                <button type="submit" className="btn-primary" disabled={loadingLogin}>
-                                    {loadingLogin ? 'Verificando...' : 'Entrar'}
+                                <button type="submit" className="btn-primary" disabled={loading}>
+                                    {loading ? 'Entrando...' : 'Entrar'}
                                 </button>
+                                
+                                <div style={{textAlign:'center', marginTop: 15}}>
+                                    <a href="#" className="login-link" onClick={handleSolicitarLogin}>
+                                        Solicitar Login
+                                    </a>
+                                </div>
                             </form>
-                            <div style={{marginTop: 20}}>
-                                <a className="login-link" onClick={handleSignUp}>Não tem conta? Fale com Admin</a>
-                            </div>
                         </div>
                     </div>
                 );
             }
 
-            // --- VIEW: APP ---
+            // --- VIEW: APLICAÇÃO ---
             return (
                 <div className="container">
+                    {/* Header Principal */}
                     <div className="header-controls">
                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
-                            <div style={{background: '#2563eb', color: 'white', padding: '10px', borderRadius: '12px', display:'flex'}}><IconWallet /></div>
+                            <div style={{background: '#2563eb', color: 'white', padding: '10px', borderRadius: '12px', display:'flex'}}>
+                                <IconWallet />
+                            </div>
                             <div>
-                                <h1 style={{fontSize: 20, fontWeight: 700}}>Finanças</h1>
-                                <p style={{fontSize: 13, color: 'var(--secondary)'}}>{session.user.email}</p>
+                                <h1 style={{fontSize: 20, fontWeight: 700}}>Olá, {session.user.email.split('@')[0]}</h1>
+                                <p style={{fontSize: 13, color: 'var(--secondary)'}}>Conectado</p>
                             </div>
                         </div>
+
                         <div style={{display:'flex', gap: 10, alignItems:'center'}}>
-                            <input type="month" className="month-selector" value={currentMonth} onChange={(e) => setCurrentMonth(e.target.value)} />
-                            <button className="btn-icon" onClick={handleLogout} title="Sair"><IconLogOut /></button>
+                            <input 
+                                type="month" 
+                                className="month-selector"
+                                value={currentMonth}
+                                onChange={(e) => setCurrentMonth(e.target.value)}
+                            />
+                            <button className="btn-icon" onClick={handleLogout} title="Sair">
+                                <IconLogOut />
+                            </button>
                         </div>
                     </div>
 
                     <div className="tabs">
-                        <button className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><IconDashboard /> Dash</button>
+                        <button className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><IconDashboard /> Dashboard</button>
                         <button className={`tab ${activeTab === 'historico' ? 'active' : ''}`} onClick={() => setActiveTab('historico')}><IconHistory /> Histórico</button>
                         <button className={`tab ${activeTab === 'receitas' ? 'active' : ''}`} onClick={() => setActiveTab('receitas')}><IconPlus /> Receitas</button>
                         <button className={`tab ${activeTab === 'gastos' ? 'active' : ''}`} onClick={() => setActiveTab('gastos')}><IconTrendingDown /> Gastos</button>
@@ -314,128 +406,328 @@
                         <button className={`tab ${activeTab === 'anotacoes' ? 'active' : ''}`} onClick={() => setActiveTab('anotacoes')}><IconEdit /> Notas</button>
                     </div>
 
+                    {/* DASHBOARD */}
                     {activeTab === 'dashboard' && (
                         <>
                             <div className="stats-grid">
                                 <div className="stat-card">
-                                    <div className="stat-label">Saldo Líquido</div>
+                                    <div className="stat-label">Saldo (Real)</div>
                                     <div className={`stat-value ${saldoTotal >= 0 ? 'positive' : 'negative'}`}>{fmtMoney(saldoTotal)}</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-label">Receitas</div>
+                                    <div className="stat-label">Total Recebido</div>
                                     <div className="stat-value positive">{fmtMoney(totalReceitas)}</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-label">Gastos</div>
+                                    <div className="stat-label">Gastos Variáveis</div>
                                     <div className="stat-value negative">{fmtMoney(totalGastos)}</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-label">Contas Pagas</div>
+                                    <div className="stat-label">Custos Fixos (Pagos)</div>
                                     <div className="stat-value">{fmtMoney(totalContasPagas)} <span style={{fontSize:12, color:'#94a3b8'}}>/ {fmtMoney(totalContasPrevisao)}</span></div>
                                 </div>
                             </div>
+
+                            <div className="form-row">
+                                <div className="card">
+                                    <h2>Top Categorias do Mês</h2>
+                                    {gastosPorCategoria.length === 0 ? <p style={{color:'#94a3b8'}}>Sem gastos este mês.</p> : (
+                                        gastosPorCategoria.slice(0, 5).map((cat, idx) => (
+                                            <div key={idx} className="category-bar-item">
+                                                <div className="category-header">
+                                                    <span>{cat.categoria}</span>
+                                                    <strong>{fmtMoney(cat.valor)}</strong>
+                                                </div>
+                                                <div className="category-progress-bg">
+                                                    <div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas)) * 100}%`}}></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="card">
+                                    <h2>Últimas Movimentações</h2>
+                                    {historicoMes.slice(0, 5).map((item, idx) => (
+                                        <div key={idx} className="transaction-item">
+                                            <div className="transaction-info">
+                                                <div className="transaction-description">{item.descricao}</div>
+                                                <div className="transaction-meta">{fmtDate(item.data)} • {item.categoria || 'Geral'}</div>
+                                            </div>
+                                            <div className={`transaction-amount ${item.type === 'receita' ? 'positive' : 'negative'}`}>
+                                                {item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* HISTÓRICO AVANÇADO */}
+                    {activeTab === 'historico' && (
+                        <div className="card">
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 20, flexWrap:'wrap', gap: 10}}>
+                                <h2>Histórico Detalhado: {currentMonth}</h2>
+                                <div style={{position:'relative', maxWidth: 300, width:'100%'}}>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Buscar por nome, valor..." 
+                                        value={historySearch} 
+                                        onChange={e => setHistorySearch(e.target.value)}
+                                        style={{paddingLeft: 35}} 
+                                    />
+                                    <div style={{position:'absolute', left: 10, top: 10, color: '#94a3b8'}}><IconSearch /></div>
+                                </div>
+                            </div>
+
+                            <div className="stats-grid" style={{marginBottom: 30}}>
+                                <div className="stat-card" style={{padding: 15}}>
+                                    <div className="stat-label">Entradas</div>
+                                    <div className="stat-value positive" style={{fontSize: 20}}>
+                                        {fmtMoney(historicoMes.filter(i => i.type === 'receita').reduce((a,b)=>a+b.valor,0))}
+                                    </div>
+                                </div>
+                                <div className="stat-card" style={{padding: 15}}>
+                                    <div className="stat-label">Saídas (Var + Fixas)</div>
+                                    <div className="stat-value negative" style={{fontSize: 20}}>
+                                        {fmtMoney(historicoMes.filter(i => i.type !== 'receita').reduce((a,b)=>a+b.valor,0))}
+                                    </div>
+                                </div>
+                                <div className="stat-card" style={{padding: 15}}>
+                                    <div className="stat-label">Itens Encontrados</div>
+                                    <div className="stat-value" style={{fontSize: 20}}>{historicoMes.length}</div>
+                                </div>
+                            </div>
+
+                            {historicoMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 40}}>Nenhum registro encontrado.</p> : (
+                                <div>
+                                    <div style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', color: '#64748b', fontSize: 13, fontWeight: 600, borderBottom: '1px solid #e2e8f0'}}>
+                                        <div>Descrição</div>
+                                        <div>Categoria</div>
+                                        <div>Data</div>
+                                        <div style={{textAlign:'right'}}>Valor</div>
+                                    </div>
+                                    {historicoMes.map((item, idx) => (
+                                        <div key={idx} style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '15px 10px', borderBottom: '1px solid #f1f5f9', alignItems:'center'}}>
+                                            <div style={{fontWeight: 500}}>{item.descricao} <span style={{fontSize:10, color:'#94a3b8', marginLeft: 5}}>({item.type.toUpperCase()})</span></div>
+                                            <div style={{fontSize: 13, color: '#64748b'}}>{item.categoria || '-'}</div>
+                                            <div style={{fontSize: 13, color: '#64748b'}}>{fmtDate(item.data)}</div>
+                                            <div style={{textAlign:'right', fontWeight: 600, color: item.type === 'receita' ? 'var(--success)' : 'var(--danger)'}}>
+                                                {item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* GASTOS */}
+                    {activeTab === 'gastos' && (
+                        <>
                             <div className="card">
-                                <h2>Top Categorias</h2>
-                                {gastosPorCategoria.slice(0, 5).map((cat, idx) => (
-                                    <div key={idx} className="category-bar-item">
-                                        <div className="category-header"><span>{cat.categoria}</span><strong>{fmtMoney(cat.valor)}</strong></div>
-                                        <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas)) * 100}%`}}></div></div>
+                                <h2>Adicionar Gasto</h2>
+                                <form onSubmit={handleAddGasto}>
+                                    <div className="form-row">
+                                        <div className="form-group"><label>Descrição</label><input required type="text" value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
+                                        <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group"><label>Categoria</label>
+                                            <select value={formGasto.categoria} onChange={e => setFormGasto({...formGasto, categoria: e.target.value})}>
+                                                {CATEGORIAS_GASTOS.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="form-group"><label>Data</label><input required type="date" value={formGasto.data} onChange={e => setFormGasto({...formGasto, data: e.target.value})} /></div>
+                                    </div>
+                                    <button type="submit" className="btn-primary"><IconPlus /> Adicionar</button>
+                                </form>
+                            </div>
+
+                            <div className="card">
+                                <h2>Resumo por Categoria ({currentMonth})</h2>
+                                <div style={{display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10}}>
+                                    {gastosPorCategoria.map((cat, idx) => (
+                                        <div key={idx} style={{
+                                            minWidth: 120, 
+                                            padding: 15, 
+                                            background: '#f8fafc', 
+                                            borderRadius: 8, 
+                                            border: '1px solid #e2e8f0',
+                                            textAlign: 'center'
+                                        }}>
+                                            <div style={{fontSize: 12, color: 'var(--secondary)', marginBottom: 5}}>{cat.categoria}</div>
+                                            <div style={{fontWeight: 700, color: 'var(--text-main)'}}>{fmtMoney(cat.valor)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h2>Lista de Gastos ({currentMonth})</h2>
+                                {gastosMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 20}}>Nenhum gasto neste mês.</p> : 
+                                    gastosMes.slice().reverse().map(g => (
+                                    <div key={g.id} className="transaction-item">
+                                        <div className="transaction-info">
+                                            <div className="transaction-description">{g.descricao}</div>
+                                            <div className="transaction-meta">
+                                                <span className="badge badge-cat">{g.categoria}</span>
+                                                <span>{fmtDate(g.data)}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{display:'flex', alignItems:'center', gap: 15}}>
+                                            <div className="transaction-amount negative">- {fmtMoney(g.valor)}</div>
+                                            <button className="btn-icon delete" onClick={() => delItem(setGastos, gastos, g.id)}><IconTrash /></button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </>
                     )}
 
+                    {/* RECEITAS */}
                     {activeTab === 'receitas' && (
-                        <div className="card">
-                            <h2>Adicionar Receita</h2>
-                            <form onSubmit={(e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita); setFormReceita({...formReceita, descricao: '', valor: ''}); }}>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Descrição</label><input required value={formReceita.descricao} onChange={e => setFormReceita({...formReceita, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formReceita.valor} onChange={e => setFormReceita({...formReceita, valor: e.target.value})} /></div>
-                                    <div className="form-group"><label>Data</label><input required type="date" value={formReceita.data} onChange={e => setFormReceita({...formReceita, data: e.target.value})} /></div>
-                                </div>
-                                <button type="submit" className="btn-primary">Adicionar</button>
-                            </form>
-                            <div style={{marginTop: 20}}>
-                                {receitasMes.map(r => (
+                        <>
+                            <div className="card">
+                                <h2>Nova Receita</h2>
+                                <form onSubmit={handleAddReceita}>
+                                    <div className="form-row">
+                                        <div className="form-group"><label>Descrição</label><input required type="text" value={formReceita.descricao} onChange={e => setFormReceita({...formReceita, descricao: e.target.value})} /></div>
+                                        <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formReceita.valor} onChange={e => setFormReceita({...formReceita, valor: e.target.value})} /></div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group"><label>Tipo</label><select value={formReceita.tipo} onChange={e => setFormReceita({...formReceita, tipo: e.target.value})}><option value="PF">Pessoa Física</option><option value="PJ">Pessoa Jurídica</option></select></div>
+                                        <div className="form-group"><label>Data</label><input required type="date" value={formReceita.data} onChange={e => setFormReceita({...formReceita, data: e.target.value})} /></div>
+                                    </div>
+                                    <button type="submit" className="btn-primary"><IconPlus /> Adicionar</button>
+                                </form>
+                            </div>
+                            <div className="card">
+                                {receitasMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 20}}>Nenhuma receita neste mês.</p> :
+                                receitasMes.map(r => (
                                     <div key={r.id} className="transaction-item">
-                                        <div className="transaction-info"><div className="transaction-description">{r.descricao}</div><div className="transaction-meta">{fmtDate(r.data)}</div></div>
-                                        <div style={{display:'flex', gap:10, alignItems:'center'}}><div className="transaction-amount positive">+ {fmtMoney(r.valor)}</div><button className="btn-icon delete" onClick={()=>delItem(setReceitas, receitas, r.id)}><IconTrash/></button></div>
+                                        <div className="transaction-info">
+                                            <div className="transaction-description">{r.descricao}</div>
+                                            <div className="transaction-meta"><span className={`badge ${r.tipo === 'PF' ? 'badge-pf' : 'badge-pj'}`}>{r.tipo}</span> <span>{fmtDate(r.data)}</span></div>
+                                        </div>
+                                        <div style={{display:'flex', alignItems:'center', gap: 15}}>
+                                            <div className="transaction-amount positive">+ {fmtMoney(r.valor)}</div>
+                                            <button className="btn-icon delete" onClick={() => delItem(setReceitas, receitas, r.id)}><IconTrash /></button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </>
                     )}
 
-                    {activeTab === 'gastos' && (
-                        <div className="card">
-                            <h2>Adicionar Gasto</h2>
-                            <form onSubmit={(e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto); setFormGasto({...formGasto, descricao: '', valor: ''}); }}>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Descrição</label><input required value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
-                                </div>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Categoria</label><select value={formGasto.categoria} onChange={e => setFormGasto({...formGasto, categoria: e.target.value})}>{CATEGORIAS_GASTOS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-                                    <div className="form-group"><label>Data</label><input required type="date" value={formGasto.data} onChange={e => setFormGasto({...formGasto, data: e.target.value})} /></div>
-                                </div>
-                                <button type="submit" className="btn-primary">Adicionar</button>
-                            </form>
-                            <div style={{marginTop: 20}}>
-                                {gastosMes.map(g => (
-                                    <div key={g.id} className="transaction-item">
-                                        <div className="transaction-info"><div className="transaction-description">{g.descricao}</div><div className="transaction-meta"><span className="badge badge-cat">{g.categoria}</span> {fmtDate(g.data)}</div></div>
-                                        <div style={{display:'flex', gap:10, alignItems:'center'}}><div className="transaction-amount negative">- {fmtMoney(g.valor)}</div><button className="btn-icon delete" onClick={()=>delItem(setGastos, gastos, g.id)}><IconTrash/></button></div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Simplificando outras abas para brevidade do código, seguindo a lógica das anteriores */}
-                    {activeTab === 'historico' && (
-                        <div className="card">
-                            <h2>Histórico Completo</h2>
-                            <input type="text" placeholder="Buscar..." value={historySearch} onChange={e => setHistorySearch(e.target.value)} style={{marginBottom: 20}} />
-                            {historicoMes.map(h => (
-                                <div key={h.id} className="transaction-item">
-                                    <div className="transaction-info"><div className="transaction-description">{h.descricao}</div><div className="transaction-meta">{fmtDate(h.data)} • {h.type}</div></div>
-                                    <div className={`transaction-amount ${h.type==='receita'?'positive':'negative'}`}>{h.type==='receita'?'+':'-'} {fmtMoney(h.valor)}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    
+                    {/* CONTAS FIXAS */}
                     {activeTab === 'contasFixas' && (
                          <div className="card">
-                            <h2>Contas Fixas</h2>
+                            <h2>Contas Fixas (Mensais)</h2>
                             <form onSubmit={(e) => { e.preventDefault(); addItem(setContasFixas, contasFixas, formContaFixa); setFormContaFixa({...formContaFixa, descricao: '', valor: ''}); }} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formContaFixa.descricao} onChange={e => setFormContaFixa({...formContaFixa, descricao: e.target.value})} /></div>
                                     <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
-                                    <div className="form-group"><label>Vencimento</label><input required type="date" value={formContaFixa.vencimento} onChange={e => setFormContaFixa({...formContaFixa, vencimento: e.target.value})} /></div>
+                                    <div className="form-group"><label>Vencimento (Data)</label><input required type="date" value={formContaFixa.vencimento} onChange={e => setFormContaFixa({...formContaFixa, vencimento: e.target.value})} /></div>
                                 </div>
                                 <button type="submit" className="btn-primary">Adicionar</button>
                             </form>
-                            {contasFixas.map(c => {
+                            
+                            <h3 style={{marginTop: 30, marginBottom: 15, fontSize: 14, color: 'var(--secondary)'}}>Situação em {currentMonth}</h3>
+                            {contasFixas.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center'}}>Nenhuma conta cadastrada.</p> :
+                            contasFixas.map(c => {
                                 const isPaid = (c.pagamentos || []).includes(currentMonth);
                                 return (
                                 <div key={c.id} className="transaction-item">
-                                    <div className="transaction-info"><div className="transaction-description" style={{textDecoration: isPaid ? 'line-through' : 'none'}}>{c.descricao}</div><div className="transaction-meta">{fmtDate(c.vencimento)}</div></div>
+                                    <div className="transaction-info">
+                                        <div className="transaction-description" style={{textDecoration: isPaid ? 'line-through' : 'none', color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{c.descricao}</div>
+                                        <div className="transaction-meta">
+                                            Vence: {fmtDate(c.vencimento)} 
+                                            {isPaid && <span className="badge badge-paid" style={{marginLeft: 10}}>PAGO</span>}
+                                        </div>
+                                    </div>
                                     <div style={{display:'flex', gap: 10, alignItems:'center'}}>
-                                        <div className="transaction-amount">{fmtMoney(c.valor)}</div>
-                                        <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} onClick={() => {
-                                            const pagamentos = c.pagamentos || [];
-                                            const novo = isPaid ? pagamentos.filter(m => m !== currentMonth) : [...pagamentos, currentMonth];
-                                            setContasFixas(contasFixas.map(conta => conta.id === c.id ? { ...conta, pagamentos: novo } : conta));
-                                        }}><IconCheck /></button>
+                                        <div className="transaction-amount" style={{color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{fmtMoney(c.valor)}</div>
+                                        <button 
+                                            className={`btn-icon check ${isPaid ? 'paid' : ''}`} 
+                                            title={isPaid ? "Marcar como não pago" : "Marcar como pago"}
+                                            onClick={() => toggleContaFixaPaga(c.id)}
+                                        >
+                                            <IconCheck />
+                                        </button>
                                         <button className="btn-icon delete" onClick={()=>delItem(setContasFixas, contasFixas, c.id)}><IconTrash/></button>
                                     </div>
                                 </div>
                             )})}
                         </div>
                     )}
+
+                    {/* DÍVIDAS COM MODAL */}
+                    {activeTab === 'dividas' && (
+                        <div className="card">
+                            <h2>Gestão de Dívidas</h2>
+                             <form onSubmit={(e) => { e.preventDefault(); addItem(setDividas, dividas, {...formDivida, valorTotal: formDivida.valorTotal, valorPago: 0}); setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1}); }} style={{marginBottom: 20}}>
+                                <div className="form-row">
+                                    <div className="form-group"><label>Descrição</label><input required value={formDivida.descricao} onChange={e => setFormDivida({...formDivida, descricao: e.target.value})} /></div>
+                                    <div className="form-group"><label>Valor Total</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
+                                    <div className="form-group"><label>Parcelas</label><input required type="number" value={formDivida.parcelas} onChange={e => setFormDivida({...formDivida, parcelas: e.target.value})} /></div>
+                                </div>
+                                <button type="submit" className="btn-primary">Adicionar Dívida</button>
+                            </form>
+                            {dividas.map(d => {
+                                const p = (d.valorPago/d.valorTotal)*100;
+                                return (
+                                <div key={d.id} className="transaction-item" style={{display:'block'}}>
+                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom: 5}}>
+                                        <div><div className="transaction-description">{d.descricao}</div><small style={{color:'var(--danger)'}}>Restante: {fmtMoney(d.valorTotal - d.valorPago)}</small></div>
+                                        <div style={{display:'flex', gap: 5}}>
+                                            <button className="btn-icon edit" onClick={() => { setDividaSelecionada(d); setModalDividaOpen(true); setNovaParcelaInput(d.parcelaAtual); }}><IconRefresh/></button>
+                                            <button className="btn-icon delete" onClick={()=>delItem(setDividas, dividas, d.id)}><IconTrash/></button>
+                                        </div>
+                                    </div>
+                                    <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${p}%`}}></div></div>
+                                </div>
+                            )})}
+                        </div>
+                    )}
+                    
+                    {activeTab === 'anotacoes' && (
+                        <div className="card">
+                             <form onSubmit={adicionarAnotacao} style={{marginBottom: 20}}>
+                                <textarea value={formAnotacao} onChange={e => setFormAnotacao(e.target.value)} placeholder="Nova nota..." style={{minHeight: 80, marginBottom: 10}}></textarea>
+                                <button type="submit" className="btn-primary">Salvar</button>
+                            </form>
+                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem(setAnotacoes, anotacoes, a.id)}><IconTrash/></button></div>)}
+                        </div>
+                    )}
+
+                    {/* MODAL DIVIDA */}
+                    {modalDividaOpen && dividaSelecionada && (
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <h3>Atualizar: {dividaSelecionada.descricao}</h3>
+                                <div className="form-group" style={{marginTop: 20}}>
+                                    <label>Pagamento Extra</label>
+                                    <input type="number" value={valorPagamentoInput} onChange={e => setValorPagamentoInput(e.target.value)} placeholder="0.00" />
+                                </div>
+                                <div className="form-group">
+                                    <label>Parcela Atual</label>
+                                    <input type="number" value={novaParcelaInput} onChange={e => setNovaParcelaInput(e.target.value)} />
+                                </div>
+                                <div style={{display:'flex', gap: 10, justifyContent:'flex-end'}}>
+                                    <button className="btn-ghost" onClick={()=>setModalDividaOpen(false)}>Cancelar</button>
+                                    <button className="btn-primary" style={{width:'auto'}} onClick={() => {
+                                        const extra = parseFloat(valorPagamentoInput) || 0;
+                                        const parc = parseInt(novaParcelaInput) || dividaSelecionada.parcelaAtual;
+                                        setDividas(dividas.map(d => d.id === dividaSelecionada.id ? { ...d, valorPago: Math.min(d.valorTotal, d.valorPago + extra), parcelaAtual: parc } : d));
+                                        setModalDividaOpen(false);
+                                        setValorPagamentoInput('');
+                                    }}>Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             );
         }
