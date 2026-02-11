@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Pessoais - Pro V2 (Conectado)</title>
+    <title>Finanças Pessoais - Pro V2 (Bitcoin + Reserva)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -22,6 +22,8 @@
             --border: #e2e8f0;
             --success: #10b981;
             --danger: #ef4444;
+            --warning: #f59e0b;
+            --bitcoin: #f7931a;
             --text-main: #0f172a;
             --text-muted: #94a3b8;
         }
@@ -56,6 +58,8 @@
         .stat-value { font-size: 24px; font-weight: 700; color: var(--text-main); }
         .stat-value.positive { color: var(--success); }
         .stat-value.negative { color: var(--danger); }
+        .stat-value.warning { color: var(--warning); }
+        .stat-value.bitcoin { color: var(--bitcoin); }
 
         /* Category Bars */
         .category-bar-item { margin-bottom: 15px; }
@@ -134,6 +138,7 @@
         const IconCheck = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
         const IconHistory = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
         const IconSearch = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+        const IconBitcoin = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.302 2.767-8.704 2.819-2.219 2.112-6.246-1.58-6.845"></path><path d="M8.286 18.497 8.795 4.88"></path><path d="M14.286 1.984 13.914 18.99"></path><path d="M5.5 19H14"></path><path d="M5.5 5H14"></path></svg>;
 
         const CATEGORIAS_GASTOS = [
             "Alimentação", "Mercado", "Moradia", "Transporte", 
@@ -161,7 +166,12 @@
             const [contasFixas, setContasFixas] = useState([]);
             const [dividas, setDividas] = useState([]);
             const [anotacoes, setAnotacoes] = useState([]);
+            
+            // Novos Estados (Reserva + Bitcoin)
             const [reservaEmergencia, setReservaEmergencia] = useState(0);
+            const [reservaInput, setReservaInput] = useState('');
+            const [btcHoldings, setBtcHoldings] = useState(0); // Quantidade de BTC
+            const [btcPrice, setBtcPrice] = useState(0); // Preço atual do BTC
 
             // Estados Histórico
             const [historySearch, setHistorySearch] = useState('');
@@ -184,17 +194,36 @@
                 // Verificar sessão ativa
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
-                    if (session) loadLocalData();
+                    if (session) {
+                        loadLocalData();
+                        fetchBtcPrice();
+                    }
                 });
 
                 // Escutar mudanças de Auth
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
-                    if (session) loadLocalData();
+                    if (session) {
+                        loadLocalData();
+                        fetchBtcPrice();
+                    }
                 });
 
                 return () => subscription.unsubscribe();
             }, []);
+
+            // Fetch Preço Bitcoin (API Pública)
+            const fetchBtcPrice = async () => {
+                try {
+                    const res = await fetch('https://www.mercadobitcoin.net/api/BTC/ticker/');
+                    const data = await res.json();
+                    if(data && data.ticker) {
+                        setBtcPrice(parseFloat(data.ticker.last));
+                    }
+                } catch (e) {
+                    console.error("Erro ao pegar preço BTC", e);
+                }
+            };
 
             const handleLogin = async (e) => {
                 e.preventDefault();
@@ -205,7 +234,6 @@
                         password: loginPass,
                     });
                     if (error) throw error;
-                    // Sucesso: O useEffect acima captura a sessão automaticamente
                 } catch (error) {
                     alert('Erro ao logar: ' + error.message);
                 } finally {
@@ -215,7 +243,6 @@
 
             const handleLogout = async () => {
                 await supabaseClient.auth.signOut();
-                // Limpa a tela (opcional, já que os dados estão no localStorage, eles reaparecem ao logar)
                 setReceitas([]); setGastos([]);
             };
 
@@ -232,7 +259,13 @@
                 setContasFixas(get('contasFixas'));
                 setDividas(get('dividas'));
                 setAnotacoes(get('anotacoes'));
-                setReservaEmergencia(parseFloat(localStorage.getItem('reservaEmergencia') || '0'));
+                
+                // Carregar Reserva e Bitcoin
+                const savedReserva = localStorage.getItem('reservaEmergencia');
+                if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
+                
+                const savedBtc = localStorage.getItem('btcHoldings');
+                if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
             };
 
             useEffect(() => {
@@ -243,10 +276,44 @@
                 localStorage.setItem('dividas', JSON.stringify(dividas));
                 localStorage.setItem('anotacoes', JSON.stringify(anotacoes));
                 localStorage.setItem('reservaEmergencia', reservaEmergencia.toString());
-            }, [receitas, gastos, contasFixas, dividas, anotacoes, reservaEmergencia, session]);
+                localStorage.setItem('btcHoldings', btcHoldings.toString());
+            }, [receitas, gastos, contasFixas, dividas, anotacoes, reservaEmergencia, btcHoldings, session]);
 
+            // --- FILTROS & CÁLCULOS ---
+            const filterByMonth = (items) => {
+                return items.filter(item => {
+                    if (item.data) return item.data.startsWith(currentMonth);
+                    return true;
+                });
+            };
 
-            // --- LÓGICA DE CONTAS FIXAS (PAGAMENTOS) ---
+            const receitasMes = filterByMonth(receitas);
+            const gastosMes = filterByMonth(gastos);
+            
+            // Handlers Genéricos
+            const addItem = (setter, list, item) => setter([...list, { id: Date.now(), ...item, valor: parseFloat(item.valor) }]);
+            const delItem = (setter, list, id) => setter(list.filter(i => i.id !== id));
+            
+            // Totais
+            const totalReceitas = receitasMes.reduce((acc, r) => acc + (parseFloat(r.valor) || 0), 0);
+            const totalGastos = gastosMes.reduce((acc, g) => acc + (parseFloat(g.valor) || 0), 0);
+            const totalContasPagas = contasFixas.reduce((acc, c) => {
+                return ((c.pagamentos || []).includes(currentMonth)) ? acc + (parseFloat(c.valor) || 0) : acc;
+            }, 0);
+            const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + (parseFloat(c.valor) || 0), 0);
+
+            const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
+            const saldoBtcReais = btcHoldings * btcPrice;
+
+            // Formatador BRL
+            const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+            const fmtDate = (d) => {
+                if (!d) return '-';
+                if (d.length === 7) return d; 
+                return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+            };
+
+            // Toggle Conta Fixa
             const toggleContaFixaPaga = (id) => {
                 setContasFixas(contasFixas.map(conta => {
                     if (conta.id === id) {
@@ -261,18 +328,7 @@
                 }));
             };
 
-            // --- FILTROS & CÁLCULOS ---
-            const filterByMonth = (items) => {
-                return items.filter(item => {
-                    if (item.data) return item.data.startsWith(currentMonth);
-                    return true;
-                });
-            };
-
-            const receitasMes = filterByMonth(receitas);
-            const gastosMes = filterByMonth(gastos);
-            
-            // Dados para Histórico (Unificado)
+            // Dados para Histórico
             const historicoMes = useMemo(() => {
                 const list = [
                     ...receitasMes.map(r => ({...r, type: 'receita'})),
@@ -286,51 +342,33 @@
                         type: 'fixa'
                     }))
                 ];
-                
                 const termo = historySearch.toLowerCase();
                 return list.filter(item => 
                     item.descricao.toLowerCase().includes(termo) || 
-                    (item.categoria && item.categoria.toLowerCase().includes(termo)) ||
-                    item.valor.toString().includes(termo)
+                    (item.categoria && item.categoria.toLowerCase().includes(termo))
                 ).sort((a, b) => new Date(b.data || currentMonth) - new Date(a.data || currentMonth));
-
             }, [receitasMes, gastosMes, contasFixas, currentMonth, historySearch]);
 
-
-            const totalReceitas = receitasMes.reduce((acc, r) => acc + r.valor, 0);
-            const totalGastos = gastosMes.reduce((acc, g) => acc + g.valor, 0);
-            const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + c.valor, 0);
-            const totalContasPagas = contasFixas.reduce((acc, c) => {
-                return ((c.pagamentos || []).includes(currentMonth)) ? acc + c.valor : acc;
-            }, 0);
-
-            const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
-            
-            // Análise de Categorias
+            // Análise Categorias
             const gastosPorCategoria = useMemo(() => {
                 const group = {};
                 gastosMes.forEach(g => group[g.categoria] = (group[g.categoria] || 0) + g.valor);
-                if (totalContasPagas > 0) {
-                    group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
-                }
-                return Object.entries(group)
-                    .map(([cat, val]) => ({ categoria: cat, valor: val }))
-                    .sort((a, b) => b.valor - a.valor);
+                if (totalContasPagas > 0) group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
+                return Object.entries(group).map(([cat, val]) => ({ categoria: cat, valor: val })).sort((a, b) => b.valor - a.valor);
             }, [gastosMes, totalContasPagas]);
 
             // Handlers
-            const addItem = (setter, list, item) => setter([...list, { id: Date.now(), ...item, valor: parseFloat(item.valor) }]);
-            const delItem = (setter, list, id) => setter(list.filter(i => i.id !== id));
-            
             const handleAddGasto = (e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto); setFormGasto({...formGasto, descricao: '', valor: ''}); };
             const handleAddReceita = (e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita); setFormReceita({...formReceita, descricao: '', valor: ''}); };
             const adicionarAnotacao = (e) => { e.preventDefault(); addItem(setAnotacoes, anotacoes, { conteudo: formAnotacao, data: new Date().toISOString() }); setFormAnotacao(''); };
             
-            const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-            const fmtDate = (d) => {
-                if (!d) return '-';
-                if (d.length === 7) return d; 
-                return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+            const atualizarReserva = (e) => {
+                e.preventDefault();
+                const val = parseFloat(reservaInput);
+                if (!isNaN(val)) {
+                    setReservaEmergencia(val);
+                    setReservaInput('');
+                }
             };
 
             // --- VIEW: LOGIN ---
@@ -338,12 +376,9 @@
                 return (
                     <div className="login-container">
                         <div className="login-card">
-                            <div className="login-logo">
-                                <IconWallet style={{width: 60, height: 60}} />
-                            </div>
+                            <div className="login-logo"><IconWallet style={{width: 60, height: 60}} /></div>
                             <h2 style={{marginBottom: 10, color: 'var(--text-main)'}}>Finanças Pro</h2>
                             <p style={{marginBottom: 30, color: 'var(--secondary)'}}>Entre para acessar suas finanças</p>
-
                             <form onSubmit={handleLogin}>
                                 <div className="form-group" style={{textAlign:'left'}}>
                                     <label>Email</label>
@@ -353,15 +388,8 @@
                                     <label>Senha</label>
                                     <input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="******" />
                                 </div>
-                                <button type="submit" className="btn-primary" disabled={loading}>
-                                    {loading ? 'Entrando...' : 'Entrar'}
-                                </button>
-                                
-                                <div style={{textAlign:'center', marginTop: 15}}>
-                                    <a href="#" className="login-link" onClick={handleSolicitarLogin}>
-                                        Solicitar Login
-                                    </a>
-                                </div>
+                                <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
+                                <div style={{textAlign:'center', marginTop: 15}}><a href="#" className="login-link" onClick={handleSolicitarLogin}>Solicitar Login</a></div>
                             </form>
                         </div>
                     </div>
@@ -371,31 +399,22 @@
             // --- VIEW: APLICAÇÃO ---
             return (
                 <div className="container">
-                    {/* Header Principal */}
+                    {/* Header */}
                     <div className="header-controls">
                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
-                            <div style={{background: '#2563eb', color: 'white', padding: '10px', borderRadius: '12px', display:'flex'}}>
-                                <IconWallet />
-                            </div>
+                            <div style={{background: '#2563eb', color: 'white', padding: '10px', borderRadius: '12px', display:'flex'}}><IconWallet /></div>
                             <div>
                                 <h1 style={{fontSize: 20, fontWeight: 700}}>Olá, {session.user.email.split('@')[0]}</h1>
                                 <p style={{fontSize: 13, color: 'var(--secondary)'}}>Conectado</p>
                             </div>
                         </div>
-
                         <div style={{display:'flex', gap: 10, alignItems:'center'}}>
-                            <input 
-                                type="month" 
-                                className="month-selector"
-                                value={currentMonth}
-                                onChange={(e) => setCurrentMonth(e.target.value)}
-                            />
-                            <button className="btn-icon" onClick={handleLogout} title="Sair">
-                                <IconLogOut />
-                            </button>
+                            <input type="month" className="month-selector" value={currentMonth} onChange={(e) => setCurrentMonth(e.target.value)} />
+                            <button className="btn-icon" onClick={handleLogout} title="Sair"><IconLogOut /></button>
                         </div>
                     </div>
 
+                    {/* Tabs */}
                     <div className="tabs">
                         <button className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><IconDashboard /> Dashboard</button>
                         <button className={`tab ${activeTab === 'historico' ? 'active' : ''}`} onClick={() => setActiveTab('historico')}><IconHistory /> Histórico</button>
@@ -403,6 +422,7 @@
                         <button className={`tab ${activeTab === 'gastos' ? 'active' : ''}`} onClick={() => setActiveTab('gastos')}><IconTrendingDown /> Gastos</button>
                         <button className={`tab ${activeTab === 'contasFixas' ? 'active' : ''}`} onClick={() => setActiveTab('contasFixas')}><IconFileText /> Fixas</button>
                         <button className={`tab ${activeTab === 'dividas' ? 'active' : ''}`} onClick={() => setActiveTab('dividas')}><IconCreditCard /> Dívidas</button>
+                        <button className={`tab ${activeTab === 'bitcoin' ? 'active' : ''}`} onClick={() => setActiveTab('bitcoin')}><IconBitcoin /> Bitcoin</button>
                         <button className={`tab ${activeTab === 'anotacoes' ? 'active' : ''}`} onClick={() => setActiveTab('anotacoes')}><IconEdit /> Notas</button>
                     </div>
 
@@ -411,7 +431,7 @@
                         <>
                             <div className="stats-grid">
                                 <div className="stat-card">
-                                    <div className="stat-label">Saldo (Real)</div>
+                                    <div className="stat-label">Saldo (Mês)</div>
                                     <div className={`stat-value ${saldoTotal >= 0 ? 'positive' : 'negative'}`}>{fmtMoney(saldoTotal)}</div>
                                 </div>
                                 <div className="stat-card">
@@ -419,18 +439,30 @@
                                     <div className="stat-value positive">{fmtMoney(totalReceitas)}</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-label">Gastos Variáveis</div>
-                                    <div className="stat-value negative">{fmtMoney(totalGastos)}</div>
+                                    <div className="stat-label">Gastos + Fixas</div>
+                                    <div className="stat-value negative">{fmtMoney(totalGastos + totalContasPagas)}</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-label">Custos Fixos (Pagos)</div>
-                                    <div className="stat-value">{fmtMoney(totalContasPagas)} <span style={{fontSize:12, color:'#94a3b8'}}>/ {fmtMoney(totalContasPrevisao)}</span></div>
+                                    <div className="stat-label">Reserva Emergência</div>
+                                    <div className="stat-value warning">{fmtMoney(reservaEmergencia)}</div>
                                 </div>
+                            </div>
+
+                            {/* Cartão de Edição Rápida da Reserva */}
+                            <div className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                                <div>
+                                    <h2 style={{marginBottom:5}}>Reserva de Emergência</h2>
+                                    <p style={{fontSize:13, color:'var(--secondary)'}}>Valor guardado para imprevistos</p>
+                                </div>
+                                <form onSubmit={atualizarReserva} style={{display:'flex', gap:10}}>
+                                    <input type="number" step="0.01" placeholder="Novo valor..." value={reservaInput} onChange={e => setReservaInput(e.target.value)} style={{width: 150}} />
+                                    <button type="submit" className="btn-primary" style={{width:'auto'}}>Atualizar</button>
+                                </form>
                             </div>
 
                             <div className="form-row">
                                 <div className="card">
-                                    <h2>Top Categorias do Mês</h2>
+                                    <h2>Top Categorias</h2>
                                     {gastosPorCategoria.length === 0 ? <p style={{color:'#94a3b8'}}>Sem gastos este mês.</p> : (
                                         gastosPorCategoria.slice(0, 5).map((cat, idx) => (
                                             <div key={idx} className="category-bar-item">
@@ -439,7 +471,7 @@
                                                     <strong>{fmtMoney(cat.valor)}</strong>
                                                 </div>
                                                 <div className="category-progress-bg">
-                                                    <div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas)) * 100}%`}}></div>
+                                                    <div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas || 1)) * 100}%`}}></div>
                                                 </div>
                                             </div>
                                         ))
@@ -463,58 +495,68 @@
                         </>
                     )}
 
-                    {/* HISTÓRICO AVANÇADO */}
+                    {/* BITCOIN TAB */}
+                    {activeTab === 'bitcoin' && (
+                        <>
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-label">Total em Bitcoin</div>
+                                    <div className="stat-value bitcoin">{btcHoldings} BTC</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Valor em Reais (Hoje)</div>
+                                    <div className="stat-value positive">{fmtMoney(saldoBtcReais)}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Cotação Atual (1 BTC)</div>
+                                    <div className="stat-value">{fmtMoney(btcPrice)}</div>
+                                </div>
+                            </div>
+                            
+                            <div className="card">
+                                <h2>Gerenciar Carteira Bitcoin</h2>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Atualizar Quantidade de BTC</label>
+                                        <div style={{display:'flex', gap: 10}}>
+                                            <input type="number" step="0.00000001" value={btcHoldings} onChange={e => setBtcHoldings(e.target.value)} />
+                                            <button className="btn-primary" style={{width:'auto'}} onClick={() => alert('Saldo BTC atualizado!')}>Salvar</button>
+                                        </div>
+                                        <p style={{fontSize:12, color:'var(--secondary)', marginTop:5}}>Insira a fração exata (ex: 0.00540000)</p>
+                                    </div>
+                                    <div className="form-group" style={{display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                        <button className="btn-ghost" onClick={fetchBtcPrice}><IconRefresh /> Atualizar Cotação Agora</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* HISTÓRICO */}
                     {activeTab === 'historico' && (
                         <div className="card">
                             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 20, flexWrap:'wrap', gap: 10}}>
                                 <h2>Histórico Detalhado: {currentMonth}</h2>
                                 <div style={{position:'relative', maxWidth: 300, width:'100%'}}>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Buscar por nome, valor..." 
-                                        value={historySearch} 
-                                        onChange={e => setHistorySearch(e.target.value)}
-                                        style={{paddingLeft: 35}} 
-                                    />
+                                    <input type="text" placeholder="Buscar..." value={historySearch} onChange={e => setHistorySearch(e.target.value)} style={{paddingLeft: 35}} />
                                     <div style={{position:'absolute', left: 10, top: 10, color: '#94a3b8'}}><IconSearch /></div>
                                 </div>
                             </div>
-
                             <div className="stats-grid" style={{marginBottom: 30}}>
-                                <div className="stat-card" style={{padding: 15}}>
-                                    <div className="stat-label">Entradas</div>
-                                    <div className="stat-value positive" style={{fontSize: 20}}>
-                                        {fmtMoney(historicoMes.filter(i => i.type === 'receita').reduce((a,b)=>a+b.valor,0))}
-                                    </div>
-                                </div>
-                                <div className="stat-card" style={{padding: 15}}>
-                                    <div className="stat-label">Saídas (Var + Fixas)</div>
-                                    <div className="stat-value negative" style={{fontSize: 20}}>
-                                        {fmtMoney(historicoMes.filter(i => i.type !== 'receita').reduce((a,b)=>a+b.valor,0))}
-                                    </div>
-                                </div>
-                                <div className="stat-card" style={{padding: 15}}>
-                                    <div className="stat-label">Itens Encontrados</div>
-                                    <div className="stat-value" style={{fontSize: 20}}>{historicoMes.length}</div>
-                                </div>
+                                <div className="stat-card" style={{padding: 15}}><div className="stat-label">Entradas</div><div className="stat-value positive" style={{fontSize: 20}}>{fmtMoney(historicoMes.filter(i => i.type === 'receita').reduce((a,b)=>a+b.valor,0))}</div></div>
+                                <div className="stat-card" style={{padding: 15}}><div className="stat-label">Saídas</div><div className="stat-value negative" style={{fontSize: 20}}>{fmtMoney(historicoMes.filter(i => i.type !== 'receita').reduce((a,b)=>a+b.valor,0))}</div></div>
                             </div>
-
                             {historicoMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 40}}>Nenhum registro encontrado.</p> : (
                                 <div>
                                     <div style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', color: '#64748b', fontSize: 13, fontWeight: 600, borderBottom: '1px solid #e2e8f0'}}>
-                                        <div>Descrição</div>
-                                        <div>Categoria</div>
-                                        <div>Data</div>
-                                        <div style={{textAlign:'right'}}>Valor</div>
+                                        <div>Descrição</div><div>Categoria</div><div>Data</div><div style={{textAlign:'right'}}>Valor</div>
                                     </div>
                                     {historicoMes.map((item, idx) => (
                                         <div key={idx} style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '15px 10px', borderBottom: '1px solid #f1f5f9', alignItems:'center'}}>
-                                            <div style={{fontWeight: 500}}>{item.descricao} <span style={{fontSize:10, color:'#94a3b8', marginLeft: 5}}>({item.type.toUpperCase()})</span></div>
+                                            <div style={{fontWeight: 500}}>{item.descricao}</div>
                                             <div style={{fontSize: 13, color: '#64748b'}}>{item.categoria || '-'}</div>
                                             <div style={{fontSize: 13, color: '#64748b'}}>{fmtDate(item.data)}</div>
-                                            <div style={{textAlign:'right', fontWeight: 600, color: item.type === 'receita' ? 'var(--success)' : 'var(--danger)'}}>
-                                                {item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}
-                                            </div>
+                                            <div style={{textAlign:'right', fontWeight: 600, color: item.type === 'receita' ? 'var(--success)' : 'var(--danger)'}}>{item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -530,7 +572,7 @@
                                 <form onSubmit={handleAddGasto}>
                                     <div className="form-row">
                                         <div className="form-group"><label>Descrição</label><input required type="text" value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
-                                        <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
+                                        <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
                                     </div>
                                     <div className="form-row">
                                         <div className="form-group"><label>Categoria</label>
@@ -543,26 +585,6 @@
                                     <button type="submit" className="btn-primary"><IconPlus /> Adicionar</button>
                                 </form>
                             </div>
-
-                            <div className="card">
-                                <h2>Resumo por Categoria ({currentMonth})</h2>
-                                <div style={{display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 10}}>
-                                    {gastosPorCategoria.map((cat, idx) => (
-                                        <div key={idx} style={{
-                                            minWidth: 120, 
-                                            padding: 15, 
-                                            background: '#f8fafc', 
-                                            borderRadius: 8, 
-                                            border: '1px solid #e2e8f0',
-                                            textAlign: 'center'
-                                        }}>
-                                            <div style={{fontSize: 12, color: 'var(--secondary)', marginBottom: 5}}>{cat.categoria}</div>
-                                            <div style={{fontWeight: 700, color: 'var(--text-main)'}}>{fmtMoney(cat.valor)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
                             <div className="card">
                                 <h2>Lista de Gastos ({currentMonth})</h2>
                                 {gastosMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 20}}>Nenhum gasto neste mês.</p> : 
@@ -570,10 +592,7 @@
                                     <div key={g.id} className="transaction-item">
                                         <div className="transaction-info">
                                             <div className="transaction-description">{g.descricao}</div>
-                                            <div className="transaction-meta">
-                                                <span className="badge badge-cat">{g.categoria}</span>
-                                                <span>{fmtDate(g.data)}</span>
-                                            </div>
+                                            <div className="transaction-meta"><span className="badge badge-cat">{g.categoria}</span><span>{fmtDate(g.data)}</span></div>
                                         </div>
                                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
                                             <div className="transaction-amount negative">- {fmtMoney(g.valor)}</div>
@@ -593,7 +612,7 @@
                                 <form onSubmit={handleAddReceita}>
                                     <div className="form-row">
                                         <div className="form-group"><label>Descrição</label><input required type="text" value={formReceita.descricao} onChange={e => setFormReceita({...formReceita, descricao: e.target.value})} /></div>
-                                        <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formReceita.valor} onChange={e => setFormReceita({...formReceita, valor: e.target.value})} /></div>
+                                        <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formReceita.valor} onChange={e => setFormReceita({...formReceita, valor: e.target.value})} /></div>
                                     </div>
                                     <div className="form-row">
                                         <div className="form-group"><label>Tipo</label><select value={formReceita.tipo} onChange={e => setFormReceita({...formReceita, tipo: e.target.value})}><option value="PF">Pessoa Física</option><option value="PJ">Pessoa Jurídica</option></select></div>
@@ -627,12 +646,11 @@
                             <form onSubmit={(e) => { e.preventDefault(); addItem(setContasFixas, contasFixas, formContaFixa); setFormContaFixa({...formContaFixa, descricao: '', valor: ''}); }} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formContaFixa.descricao} onChange={e => setFormContaFixa({...formContaFixa, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Valor</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
+                                    <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
                                     <div className="form-group"><label>Vencimento (Data)</label><input required type="date" value={formContaFixa.vencimento} onChange={e => setFormContaFixa({...formContaFixa, vencimento: e.target.value})} /></div>
                                 </div>
                                 <button type="submit" className="btn-primary">Adicionar</button>
                             </form>
-                            
                             <h3 style={{marginTop: 30, marginBottom: 15, fontSize: 14, color: 'var(--secondary)'}}>Situação em {currentMonth}</h3>
                             {contasFixas.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center'}}>Nenhuma conta cadastrada.</p> :
                             contasFixas.map(c => {
@@ -641,20 +659,11 @@
                                 <div key={c.id} className="transaction-item">
                                     <div className="transaction-info">
                                         <div className="transaction-description" style={{textDecoration: isPaid ? 'line-through' : 'none', color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{c.descricao}</div>
-                                        <div className="transaction-meta">
-                                            Vence: {fmtDate(c.vencimento)} 
-                                            {isPaid && <span className="badge badge-paid" style={{marginLeft: 10}}>PAGO</span>}
-                                        </div>
+                                        <div className="transaction-meta">Vence: {fmtDate(c.vencimento)} {isPaid && <span className="badge badge-paid" style={{marginLeft: 10}}>PAGO</span>}</div>
                                     </div>
                                     <div style={{display:'flex', gap: 10, alignItems:'center'}}>
                                         <div className="transaction-amount" style={{color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{fmtMoney(c.valor)}</div>
-                                        <button 
-                                            className={`btn-icon check ${isPaid ? 'paid' : ''}`} 
-                                            title={isPaid ? "Marcar como não pago" : "Marcar como pago"}
-                                            onClick={() => toggleContaFixaPaga(c.id)}
-                                        >
-                                            <IconCheck />
-                                        </button>
+                                        <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} title={isPaid ? "Marcar como não pago" : "Marcar como pago"} onClick={() => toggleContaFixaPaga(c.id)}><IconCheck /></button>
                                         <button className="btn-icon delete" onClick={()=>delItem(setContasFixas, contasFixas, c.id)}><IconTrash/></button>
                                     </div>
                                 </div>
@@ -662,14 +671,14 @@
                         </div>
                     )}
 
-                    {/* DÍVIDAS COM MODAL */}
+                    {/* DÍVIDAS */}
                     {activeTab === 'dividas' && (
                         <div className="card">
                             <h2>Gestão de Dívidas</h2>
                              <form onSubmit={(e) => { e.preventDefault(); addItem(setDividas, dividas, {...formDivida, valorTotal: formDivida.valorTotal, valorPago: 0}); setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1}); }} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formDivida.descricao} onChange={e => setFormDivida({...formDivida, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Valor Total</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
+                                    <div className="form-group"><label>Total (R$)</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
                                     <div className="form-group"><label>Parcelas</label><input required type="number" value={formDivida.parcelas} onChange={e => setFormDivida({...formDivida, parcelas: e.target.value})} /></div>
                                 </div>
                                 <button type="submit" className="btn-primary">Adicionar Dívida</button>
@@ -691,6 +700,7 @@
                         </div>
                     )}
                     
+                    {/* ANOTAÇÕES */}
                     {activeTab === 'anotacoes' && (
                         <div className="card">
                              <form onSubmit={adicionarAnotacao} style={{marginBottom: 20}}>
@@ -707,13 +717,10 @@
                             <div className="modal-content">
                                 <h3>Atualizar: {dividaSelecionada.descricao}</h3>
                                 <div className="form-group" style={{marginTop: 20}}>
-                                    <label>Pagamento Extra</label>
+                                    <label>Pagamento Extra (R$)</label>
                                     <input type="number" value={valorPagamentoInput} onChange={e => setValorPagamentoInput(e.target.value)} placeholder="0.00" />
                                 </div>
-                                <div className="form-group">
-                                    <label>Parcela Atual</label>
-                                    <input type="number" value={novaParcelaInput} onChange={e => setNovaParcelaInput(e.target.value)} />
-                                </div>
+                                <div className="form-group"><label>Parcela Atual</label><input type="number" value={novaParcelaInput} onChange={e => setNovaParcelaInput(e.target.value)} /></div>
                                 <div style={{display:'flex', gap: 10, justifyContent:'flex-end'}}>
                                     <button className="btn-ghost" onClick={()=>setModalDividaOpen(false)}>Cancelar</button>
                                     <button className="btn-primary" style={{width:'auto'}} onClick={() => {
