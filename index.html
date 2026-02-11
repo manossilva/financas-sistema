@@ -364,11 +364,79 @@
             const [historySearch, setHistorySearch] = useState('');
 
             // Estados Login/Config
-            const [loginEmail, setLoginEmail] = useState('');
-            const [loginPass, setLoginPass] = useState('');
-            const [supabaseUrl, setSupabaseUrl] = useState(DEFAULT_SB_URL);
-            const [supabaseKey, setSupabaseKey] = useState(DEFAULT_SB_KEY);
-            const [showConfig, setShowConfig] = useState(false);
+           const { createClient } = supabase;
+
+// 1. Configure com SUAS chaves (que você disse que já tem)
+const supabaseUrl = 'SUA_URL_DO_SUPABASE';
+const supabaseKey = 'SUA_CHAVE_ANON_PUBLIC';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+function LoginForm() {
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+
+    // Esta é a função que resolve o problema da "conta demo"
+    const handleLogin = async (e) => {
+        e.preventDefault(); // Impede o site de recarregar
+        setLoading(true);
+
+        try {
+            // Chama o Supabase de verdade
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) throw error;
+
+            // Se chegou aqui, logou com sucesso!
+            alert('Login realizado com sucesso! Bem-vindo(a) ' + data.user.email);
+            console.log('Dados do usuário:', data);
+            
+            // Redirecionamento (opcional)
+            // window.location.href = '/painel.html'; 
+
+        } catch (error) {
+            alert('Erro ao logar: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="login-container">
+            <h2>Entrar no Sistema</h2>
+            <form onSubmit={handleLogin}>
+                <div>
+                    <input
+                        type="email"
+                        placeholder="Seu email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+                <div>
+                    <input
+                        type="password"
+                        placeholder="Sua senha"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                    />
+                </div>
+                <button type="submit" disabled={loading}>
+                    {loading ? 'Entrando...' : 'Acessar Conta'}
+                </button>
+            </form>
+        </div>
+    );
+}
+
+// Renderiza o componente na div com id="root" do seu HTML
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<LoginForm />);
 
             // Modal Dívida
             const [modalDividaOpen, setModalDividaOpen] = useState(false);
