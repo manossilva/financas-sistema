@@ -148,6 +148,10 @@
             "Escritório", "Marketing", "Outros"
         ];
 
+         const FORMA_DE_PAGAMENTO = [
+            "Crédito", "Débito", "Dinheiro", "PIX"
+        ];
+
         function App() {
             // Estados Globais de Sessão
             const [session, setSession] = useState(null); 
@@ -184,7 +188,7 @@
 
             // Formulários
             const [formReceita, setFormReceita] = useState({ descricao: '', valor: '', tipo: 'PF', data: new Date().toISOString().split('T')[0] });
-            const [formGasto, setFormGasto] = useState({ descricao: '', valor: '', categoria: 'Alimentação', data: new Date().toISOString().split('T')[0] });
+            const [formGasto, setFormGasto] = useState({ descricao: '', valor: '', categoria: 'Alimentação', forma_de_pagamento: 'Cartão', data: new Date().toISOString().split('T')[0] });
             const [formContaFixa, setFormContaFixa] = useState({ descricao: '', valor: '', vencimento: '' });
             const [formDivida, setFormDivida] = useState({ descricao: '', valorTotal: '', valorPago: '', parcelas: 1, parcelaAtual: 1 });
             const [formAnotacao, setFormAnotacao] = useState('');
@@ -251,25 +255,64 @@
                 alert("Entre em contato com o administrador para criar sua conta.");
             };
 
-            // --- DATA LOADING & SAVING (LOCAL STORAGE) ---
-            const loadLocalData = () => {
+            // --- DATA LOADING & SYNC (LocalStorage fallback + Supabase) ---
+            const loadLocalData = async () => {
                 const get = (k) => JSON.parse(localStorage.getItem(k) || '[]');
-                setReceitas(get('receitas'));
-                setGastos(get('gastos'));
-                setContasFixas(get('contasFixas'));
-                setDividas(get('dividas'));
-                setAnotacoes(get('anotacoes'));
-                
-                // Carregar Reserva e Bitcoin
-                const savedReserva = localStorage.getItem('reservaEmergencia');
-                if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
-                
-                const savedBtc = localStorage.getItem('btcHoldings');
-                if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
+                // Se não há sessão, carregar do localStorage
+                if (!session) {
+                    setReceitas(get('receitas'));
+                    setGastos(get('gastos'));
+                    setContasFixas(get('contasFixas'));
+                    setDividas(get('dividas'));
+                    setAnotacoes(get('anotacoes'));
+                    const savedReserva = localStorage.getItem('reservaEmergencia');
+                    if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
+                    const savedBtc = localStorage.getItem('btcHoldings');
+                    if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
+                    return;
+                }
+
+                // Com sessão, tentar carregar do Supabase; se falhar, usar localStorage como fallback
+                try {
+                    const uid = session.user.id;
+                    const [{ data: rData }, { data: gData }, { data: cData }, { data: dData }, { data: aData }] = await Promise.all([
+                        supabaseClient.from('receitas').select('*').eq('user_id', uid),
+                        supabaseClient.from('gastos').select('*').eq('user_id', uid),
+                        supabaseClient.from('contasFixas').select('*').eq('user_id', uid),
+                        supabaseClient.from('dividas').select('*').eq('user_id', uid),
+                        supabaseClient.from('anotacoes').select('*').eq('user_id', uid),
+                    ]);
+
+                    setReceitas((rData && rData.length) ? rData : get('receitas'));
+                    setGastos((gData && gData.length) ? gData : get('gastos'));
+                    setContasFixas((cData && cData.length) ? cData : get('contasFixas'));
+                    setDividas((dData && dData.length) ? dData : get('dividas'));
+                    setAnotacoes((aData && aData.length) ? aData : get('anotacoes'));
+
+                    // Carregar configurações (reserva + btc) de tabela 'settings' (chave/valor)
+                    const { data: settings } = await supabaseClient.from('settings').select('*').eq('user_id', uid);
+                    if (settings && settings.length) {
+                        const s = Object.fromEntries(settings.map(row => [row.key, row.value]));
+                        if (s.reservaEmergencia) setReservaEmergencia(parseFloat(s.reservaEmergencia));
+                        if (s.btcHoldings) setBtcHoldings(parseFloat(s.btcHoldings));
+                    } else {
+                        const savedReserva = localStorage.getItem('reservaEmergencia');
+                        if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
+                        const savedBtc = localStorage.getItem('btcHoldings');
+                        if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
+                    }
+                } catch (e) {
+                    console.error('Erro ao carregar dados do Supabase, usando localStorage', e);
+                    setReceitas(get('receitas'));
+                    setGastos(get('gastos'));
+                    setContasFixas(get('contasFixas'));
+                    setDividas(get('dividas'));
+                    setAnotacoes(get('anotacoes'));
+                }
             };
 
+            // Sincronizar mudanças: sempre gravar no localStorage; se houver sessão, também persistir no Supabase
             useEffect(() => {
-                if (!session) return;
                 localStorage.setItem('receitas', JSON.stringify(receitas));
                 localStorage.setItem('gastos', JSON.stringify(gastos));
                 localStorage.setItem('contasFixas', JSON.stringify(contasFixas));
@@ -277,6 +320,20 @@
                 localStorage.setItem('anotacoes', JSON.stringify(anotacoes));
                 localStorage.setItem('reservaEmergencia', reservaEmergencia.toString());
                 localStorage.setItem('btcHoldings', btcHoldings.toString());
+
+                if (!session) return;
+
+                const uid = session.user.id;
+
+                // upsert settings
+                (async () => {
+                    try {
+                        await supabaseClient.from('settings').upsert([
+                            { user_id: uid, key: 'reservaEmergencia', value: reservaEmergencia.toString() },
+                            { user_id: uid, key: 'btcHoldings', value: btcHoldings.toString() }
+                        ]);
+                    } catch (e) { console.error('Erro ao salvar settings no Supabase', e); }
+                })();
             }, [receitas, gastos, contasFixas, dividas, anotacoes, reservaEmergencia, btcHoldings, session]);
 
             // --- FILTROS & CÁLCULOS ---
@@ -290,9 +347,28 @@
             const receitasMes = filterByMonth(receitas);
             const gastosMes = filterByMonth(gastos);
             
-            // Handlers Genéricos
-            const addItem = (setter, list, item) => setter([...list, { id: Date.now(), ...item, valor: parseFloat(item.valor) }]);
-            const delItem = (setter, list, id) => setter(list.filter(i => i.id !== id));
+            // Handlers Genéricos com persistência no Supabase
+            const addItem = async (setter, list, item, table) => {
+                const newItem = { id: Date.now().toString(), ...item, valor: item.valor ? parseFloat(item.valor) : item.valor };
+                setter([...list, newItem]);
+                if (!session) return;
+                try {
+                    const uid = session.user.id;
+                    await supabaseClient.from(table).insert([{ ...newItem, user_id: uid }]);
+                } catch (e) {
+                    console.error('Erro ao inserir no Supabase', e);
+                }
+            };
+
+            const delItem = async (setter, list, id, table) => {
+                setter(list.filter(i => i.id !== id));
+                if (!session) return;
+                try {
+                    await supabaseClient.from(table).delete().eq('id', id).eq('user_id', session.user.id);
+                } catch (e) {
+                    console.error('Erro ao deletar do Supabase', e);
+                }
+            };
             
             // Totais
             const totalReceitas = receitasMes.reduce((acc, r) => acc + (parseFloat(r.valor) || 0), 0);
@@ -358,9 +434,9 @@
             }, [gastosMes, totalContasPagas]);
 
             // Handlers
-            const handleAddGasto = (e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto); setFormGasto({...formGasto, descricao: '', valor: ''}); };
-            const handleAddReceita = (e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita); setFormReceita({...formReceita, descricao: '', valor: ''}); };
-            const adicionarAnotacao = (e) => { e.preventDefault(); addItem(setAnotacoes, anotacoes, { conteudo: formAnotacao, data: new Date().toISOString() }); setFormAnotacao(''); };
+            const handleAddGasto = (e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto, 'gastos'); setFormGasto({...formGasto, descricao: '', valor: ''}); };
+            const handleAddReceita = (e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita, 'receitas'); setFormReceita({...formReceita, descricao: '', valor: ''}); };
+            const adicionarAnotacao = (e) => { e.preventDefault(); addItem(setAnotacoes, anotacoes, { conteudo: formAnotacao, data: new Date().toISOString() }, 'anotacoes'); setFormAnotacao(''); };
             
             const atualizarReserva = (e) => {
                 e.preventDefault();
@@ -573,11 +649,16 @@
                                     <div className="form-row">
                                         <div className="form-group"><label>Descrição</label><input required type="text" value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
                                         <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
-                                    </div>
+                                        </div>
                                     <div className="form-row">
                                         <div className="form-group"><label>Categoria</label>
                                             <select value={formGasto.categoria} onChange={e => setFormGasto({...formGasto, categoria: e.target.value})}>
                                                 {CATEGORIAS_GASTOS.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="form-group"><label>Forma de Pagamento</label>
+                                            <select value={formGasto.forma_de_pagamento} onChange={e => setFormGasto({...formGasto, forma_de_pagamento: e.target.value})}>
+                                                {FORMA_DE_PAGAMENTO.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="form-group"><label>Data</label><input required type="date" value={formGasto.data} onChange={e => setFormGasto({...formGasto, data: e.target.value})} /></div>
@@ -596,7 +677,7 @@
                                         </div>
                                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
                                             <div className="transaction-amount negative">- {fmtMoney(g.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem(setGastos, gastos, g.id)}><IconTrash /></button>
+                                            <button className="btn-icon delete" onClick={() => delItem(setGastos, gastos, g.id, 'gastos')}><IconTrash /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -631,7 +712,7 @@
                                         </div>
                                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
                                             <div className="transaction-amount positive">+ {fmtMoney(r.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem(setReceitas, receitas, r.id)}><IconTrash /></button>
+                                            <button className="btn-icon delete" onClick={() => delItem(setReceitas, receitas, r.id, 'receitas')}><IconTrash /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -643,7 +724,7 @@
                     {activeTab === 'contasFixas' && (
                          <div className="card">
                             <h2>Contas Fixas (Mensais)</h2>
-                            <form onSubmit={(e) => { e.preventDefault(); addItem(setContasFixas, contasFixas, formContaFixa); setFormContaFixa({...formContaFixa, descricao: '', valor: ''}); }} style={{marginBottom: 20}}>
+                                <form onSubmit={(e) => { e.preventDefault(); addItem(setContasFixas, contasFixas, formContaFixa, 'contasFixas'); setFormContaFixa({...formContaFixa, descricao: '', valor: ''}); }} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formContaFixa.descricao} onChange={e => setFormContaFixa({...formContaFixa, descricao: e.target.value})} /></div>
                                     <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
@@ -664,7 +745,7 @@
                                     <div style={{display:'flex', gap: 10, alignItems:'center'}}>
                                         <div className="transaction-amount" style={{color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{fmtMoney(c.valor)}</div>
                                         <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} title={isPaid ? "Marcar como não pago" : "Marcar como pago"} onClick={() => toggleContaFixaPaga(c.id)}><IconCheck /></button>
-                                        <button className="btn-icon delete" onClick={()=>delItem(setContasFixas, contasFixas, c.id)}><IconTrash/></button>
+                                        <button className="btn-icon delete" onClick={()=>delItem(setContasFixas, contasFixas, c.id, 'contasFixas')}><IconTrash/></button>
                                     </div>
                                 </div>
                             )})}
@@ -675,7 +756,7 @@
                     {activeTab === 'dividas' && (
                         <div className="card">
                             <h2>Gestão de Dívidas</h2>
-                             <form onSubmit={(e) => { e.preventDefault(); addItem(setDividas, dividas, {...formDivida, valorTotal: formDivida.valorTotal, valorPago: 0}); setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1}); }} style={{marginBottom: 20}}>
+                             <form onSubmit={(e) => { e.preventDefault(); addItem(setDividas, dividas, {...formDivida, valorTotal: formDivida.valorTotal, valorPago: 0}, 'dividas'); setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1}); }} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formDivida.descricao} onChange={e => setFormDivida({...formDivida, descricao: e.target.value})} /></div>
                                     <div className="form-group"><label>Total (R$)</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
@@ -691,7 +772,7 @@
                                         <div><div className="transaction-description">{d.descricao}</div><small style={{color:'var(--danger)'}}>Restante: {fmtMoney(d.valorTotal - d.valorPago)}</small></div>
                                         <div style={{display:'flex', gap: 5}}>
                                             <button className="btn-icon edit" onClick={() => { setDividaSelecionada(d); setModalDividaOpen(true); setNovaParcelaInput(d.parcelaAtual); }}><IconRefresh/></button>
-                                            <button className="btn-icon delete" onClick={()=>delItem(setDividas, dividas, d.id)}><IconTrash/></button>
+                                            <button className="btn-icon delete" onClick={()=>delItem(setDividas, dividas, d.id, 'dividas')}><IconTrash/></button>
                                         </div>
                                     </div>
                                     <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${p}%`}}></div></div>
@@ -707,7 +788,7 @@
                                 <textarea value={formAnotacao} onChange={e => setFormAnotacao(e.target.value)} placeholder="Nova nota..." style={{minHeight: 80, marginBottom: 10}}></textarea>
                                 <button type="submit" className="btn-primary">Salvar</button>
                             </form>
-                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem(setAnotacoes, anotacoes, a.id)}><IconTrash/></button></div>)}
+                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem(setAnotacoes, anotacoes, a.id, 'anotacoes')}><IconTrash/></button></div>)}
                         </div>
                     )}
 
