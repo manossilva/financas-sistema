@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Pessoais - Pro V2 (Bitcoin + Reserva)</title>
+    <title>Finanças Pessoais - Pro V2 (Conectado DB)</title>
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -195,20 +195,18 @@
 
             // --- AUTH E INICIALIZAÇÃO ---
             useEffect(() => {
-                // Verificar sessão ativa
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
                     if (session) {
-                        loadLocalData();
+                        fetchData(session.user.id);
                         fetchBtcPrice();
                     }
                 });
 
-                // Escutar mudanças de Auth
                 const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
                     setSession(session);
                     if (session) {
-                        loadLocalData();
+                        fetchData(session.user.id);
                         fetchBtcPrice();
                     }
                 });
@@ -216,172 +214,190 @@
                 return () => subscription.unsubscribe();
             }, []);
 
-            // Fetch Preço Bitcoin (API Pública)
             const fetchBtcPrice = async () => {
                 try {
                     const res = await fetch('https://www.mercadobitcoin.net/api/BTC/ticker/');
                     const data = await res.json();
-                    if(data && data.ticker) {
-                        setBtcPrice(parseFloat(data.ticker.last));
-                    }
-                } catch (e) {
-                    console.error("Erro ao pegar preço BTC", e);
-                }
+                    if(data && data.ticker) setBtcPrice(parseFloat(data.ticker.last));
+                } catch (e) { console.error("Erro BTC", e); }
             };
 
             const handleLogin = async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
-                        email: loginEmail,
-                        password: loginPass,
-                    });
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: loginEmail, password: loginPass });
                     if (error) throw error;
-                } catch (error) {
-                    alert('Erro ao logar: ' + error.message);
-                } finally {
-                    setLoading(false);
-                }
+                } catch (error) { alert('Erro: ' + error.message); } finally { setLoading(false); }
             };
 
             const handleLogout = async () => {
                 await supabaseClient.auth.signOut();
-                setReceitas([]); setGastos([]);
+                setReceitas([]); setGastos([]); setContasFixas([]); setDividas([]); setAnotacoes([]);
             };
 
             const handleSolicitarLogin = (e) => {
                 e.preventDefault();
-                alert("Entre em contato com o administrador para criar sua conta.");
+                alert("Entre em contato com o administrador.");
             };
 
-            // --- DATA LOADING & SYNC (LocalStorage fallback + Supabase) ---
-            const loadLocalData = async () => {
-                const get = (k) => JSON.parse(localStorage.getItem(k) || '[]');
-                // Se não há sessão, carregar do localStorage
-                if (!session) {
-                    setReceitas(get('receitas'));
-                    setGastos(get('gastos'));
-                    setContasFixas(get('contasFixas'));
-                    setDividas(get('dividas'));
-                    setAnotacoes(get('anotacoes'));
-                    const savedReserva = localStorage.getItem('reservaEmergencia');
-                    if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
-                    const savedBtc = localStorage.getItem('btcHoldings');
-                    if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
-                    return;
-                }
-
-                // Com sessão, tentar carregar do Supabase; se falhar, usar localStorage como fallback
+            // --- DATA FETCHING (SUPABASE) ---
+            const fetchData = async (uid) => {
+                setLoading(true);
                 try {
-                    const uid = session.user.id;
-                    const [{ data: rData }, { data: gData }, { data: cData }, { data: dData }, { data: aData }] = await Promise.all([
+                    const [{ data: rec }, { data: gas }, { data: fix }, { data: div }, { data: ano }, { data: sett }] = await Promise.all([
                         supabaseClient.from('receitas').select('*').eq('user_id', uid),
                         supabaseClient.from('gastos').select('*').eq('user_id', uid),
                         supabaseClient.from('contasFixas').select('*').eq('user_id', uid),
                         supabaseClient.from('dividas').select('*').eq('user_id', uid),
                         supabaseClient.from('anotacoes').select('*').eq('user_id', uid),
+                        supabaseClient.from('settings').select('*').eq('user_id', uid)
                     ]);
 
-                    setReceitas((rData && rData.length) ? rData : get('receitas'));
-                    setGastos((gData && gData.length) ? gData : get('gastos'));
-                    setContasFixas((cData && cData.length) ? cData : get('contasFixas'));
-                    setDividas((dData && dData.length) ? dData : get('dividas'));
-                    setAnotacoes((aData && aData.length) ? aData : get('anotacoes'));
+                    if (rec) setReceitas(rec);
+                    if (gas) setGastos(gas);
+                    if (fix) setContasFixas(fix);
+                    if (div) setDividas(div);
+                    if (ano) setAnotacoes(ano);
 
-                    // Carregar configurações (reserva + btc) de tabela 'settings' (chave/valor)
-                    const { data: settings } = await supabaseClient.from('settings').select('*').eq('user_id', uid);
-                    if (settings && settings.length) {
-                        const s = Object.fromEntries(settings.map(row => [row.key, row.value]));
+                    if (sett) {
+                        const s = Object.fromEntries(sett.map(r => [r.key, r.value]));
                         if (s.reservaEmergencia) setReservaEmergencia(parseFloat(s.reservaEmergencia));
                         if (s.btcHoldings) setBtcHoldings(parseFloat(s.btcHoldings));
-                    } else {
-                        const savedReserva = localStorage.getItem('reservaEmergencia');
-                        if (savedReserva) setReservaEmergencia(parseFloat(savedReserva));
-                        const savedBtc = localStorage.getItem('btcHoldings');
-                        if (savedBtc) setBtcHoldings(parseFloat(savedBtc));
                     }
-                } catch (e) {
-                    console.error('Erro ao carregar dados do Supabase, usando localStorage', e);
-                    setReceitas(get('receitas'));
-                    setGastos(get('gastos'));
-                    setContasFixas(get('contasFixas'));
-                    setDividas(get('dividas'));
-                    setAnotacoes(get('anotacoes'));
+                } catch (error) {
+                    console.error("Erro ao carregar dados:", error);
+                } finally {
+                    setLoading(false);
                 }
             };
 
-            // Sincronizar mudanças: sempre gravar no localStorage; se houver sessão, também persistir no Supabase
-            useEffect(() => {
-                localStorage.setItem('receitas', JSON.stringify(receitas));
-                localStorage.setItem('gastos', JSON.stringify(gastos));
-                localStorage.setItem('contasFixas', JSON.stringify(contasFixas));
-                localStorage.setItem('dividas', JSON.stringify(dividas));
-                localStorage.setItem('anotacoes', JSON.stringify(anotacoes));
-                localStorage.setItem('reservaEmergencia', reservaEmergencia.toString());
-                localStorage.setItem('btcHoldings', btcHoldings.toString());
-
+            // --- CRUD HELPERS ---
+            // Adicionar Item Genérico
+            const addRemoteItem = async (table, item, setter, currentList) => {
                 if (!session) return;
-
-                const uid = session.user.id;
-
-                // upsert settings
-                (async () => {
-                    try {
-                        await supabaseClient.from('settings').upsert([
-                            { user_id: uid, key: 'reservaEmergencia', value: reservaEmergencia.toString() },
-                            { user_id: uid, key: 'btcHoldings', value: btcHoldings.toString() }
-                        ]);
-                    } catch (e) { console.error('Erro ao salvar settings no Supabase', e); }
-                })();
-            }, [receitas, gastos, contasFixas, dividas, anotacoes, reservaEmergencia, btcHoldings, session]);
-
-            // --- FILTROS & CÁLCULOS ---
-            const filterByMonth = (items) => {
-                return items.filter(item => {
-                    if (item.data) return item.data.startsWith(currentMonth);
-                    return true;
-                });
+                const newItem = { ...item, user_id: session.user.id };
+                const { data, error } = await supabaseClient.from(table).insert([newItem]).select();
+                if (error) alert('Erro ao salvar: ' + error.message);
+                else if (data) setter([...currentList, data[0]]);
             };
 
+            // Deletar Item Genérico
+            const delItem = async (table, setter, list, id) => {
+                const { error } = await supabaseClient.from(table).delete().eq('id', id);
+                if (!error) setter(list.filter(i => i.id !== id));
+                else alert('Erro ao deletar: ' + error.message);
+            };
+
+            // Atualizar Settings (Upsert)
+            const updateSetting = async (key, value) => {
+                if (!session) return;
+                const { error } = await supabaseClient.from('settings').upsert(
+                    { user_id: session.user.id, key: key, value: String(value) },
+                    { onConflict: 'user_id, key' }
+                );
+                if (error) console.error("Erro saving setting", error);
+            };
+
+            // --- HANDLERS ESPECÍFICOS ---
+
+            const handleAddGasto = async (e) => { 
+                e.preventDefault(); 
+                await addRemoteItem('gastos', { ...formGasto, valor: parseFloat(formGasto.valor) }, setGastos, gastos);
+                setFormGasto({...formGasto, descricao: '', valor: ''}); 
+            };
+
+            const handleAddReceita = async (e) => { 
+                e.preventDefault(); 
+                await addRemoteItem('receitas', { ...formReceita, valor: parseFloat(formReceita.valor) }, setReceitas, receitas);
+                setFormReceita({...formReceita, descricao: '', valor: ''}); 
+            };
+
+            const adicionarAnotacao = async (e) => { 
+                e.preventDefault();
+                await addRemoteItem('anotacoes', { conteudo: formAnotacao, data: new Date().toISOString() }, setAnotacoes, anotacoes);
+                setFormAnotacao('');
+            };
+
+            const adicionarContaFixa = async (e) => {
+                e.preventDefault();
+                await addRemoteItem('contasFixas', { ...formContaFixa, valor: parseFloat(formContaFixa.valor) }, setContasFixas, contasFixas);
+                setFormContaFixa({...formContaFixa, descricao: '', valor: ''});
+            };
+
+            const adicionarDivida = async (e) => {
+                e.preventDefault();
+                await addRemoteItem('dividas', { 
+                    descricao: formDivida.descricao,
+                    valor_total: parseFloat(formDivida.valorTotal), 
+                    valor_pago: 0,
+                    parcelas: parseInt(formDivida.parcelas),
+                    parcela_atual: 1
+                }, setDividas, dividas);
+                setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1});
+            };
+
+            // Toggle Conta Paga (Update DB)
+            const toggleContaFixaPaga = async (conta) => {
+                const pagamentos = conta.pagamentos || [];
+                const jaPago = pagamentos.includes(currentMonth);
+                const novosPagamentos = jaPago 
+                    ? pagamentos.filter(mes => mes !== currentMonth) 
+                    : [...pagamentos, currentMonth];
+
+                // Optimistic UI Update
+                setContasFixas(contasFixas.map(c => c.id === conta.id ? { ...c, pagamentos: novosPagamentos } : c));
+                
+                const { error } = await supabaseClient.from('contasFixas').update({ pagamentos: novosPagamentos }).eq('id', conta.id);
+                if(error) alert("Erro ao atualizar conta");
+            };
+
+            // Atualizar Dívida (Update DB)
+            const atualizarDivida = async () => {
+                if(!dividaSelecionada) return;
+                const extra = parseFloat(valorPagamentoInput) || 0;
+                const parc = parseInt(novaParcelaInput) || dividaSelecionada.parcela_atual;
+                const novoPago = Math.min(parseFloat(dividaSelecionada.valor_total), (parseFloat(dividaSelecionada.valor_pago) || 0) + extra);
+
+                const updates = { valor_pago: novoPago, parcela_atual: parc };
+
+                setDividas(dividas.map(d => d.id === dividaSelecionada.id ? { ...d, ...updates } : d));
+                
+                await supabaseClient.from('dividas').update(updates).eq('id', dividaSelecionada.id);
+                setModalDividaOpen(false);
+                setValorPagamentoInput('');
+            };
+
+            // Atualizar Reserva (Settings)
+            const atualizarReserva = (e) => {
+                e.preventDefault();
+                const val = parseFloat(reservaInput);
+                if (!isNaN(val)) {
+                    setReservaEmergencia(val);
+                    updateSetting('reservaEmergencia', val);
+                    setReservaInput('');
+                }
+            };
+            
+            // Atualizar Bitcoin (Settings)
+            const saveBtcHoldings = () => {
+                 updateSetting('btcHoldings', btcHoldings);
+                 alert('Saldo BTC salvo!');
+            };
+
+
+            // --- CÁLCULOS & FORMATADORES ---
+            const filterByMonth = (items) => items.filter(item => (item.data ? item.data.startsWith(currentMonth) : true));
             const receitasMes = filterByMonth(receitas);
             const gastosMes = filterByMonth(gastos);
             
-            // Handlers Genéricos com persistência no Supabase
-            const addItem = async (setter, list, item, table) => {
-                const newItem = { id: Date.now().toString(), ...item, valor: item.valor ? parseFloat(item.valor) : item.valor };
-                setter([...list, newItem]);
-                if (!session) return;
-                try {
-                    const uid = session.user.id;
-                    await supabaseClient.from(table).insert([{ ...newItem, user_id: uid }]);
-                } catch (e) {
-                    console.error('Erro ao inserir no Supabase', e);
-                }
-            };
-
-            const delItem = async (setter, list, id, table) => {
-                setter(list.filter(i => i.id !== id));
-                if (!session) return;
-                try {
-                    await supabaseClient.from(table).delete().eq('id', id).eq('user_id', session.user.id);
-                } catch (e) {
-                    console.error('Erro ao deletar do Supabase', e);
-                }
-            };
-            
-            // Totais
             const totalReceitas = receitasMes.reduce((acc, r) => acc + (parseFloat(r.valor) || 0), 0);
             const totalGastos = gastosMes.reduce((acc, g) => acc + (parseFloat(g.valor) || 0), 0);
-            const totalContasPagas = contasFixas.reduce((acc, c) => {
-                return ((c.pagamentos || []).includes(currentMonth)) ? acc + (parseFloat(c.valor) || 0) : acc;
-            }, 0);
+            const totalContasPagas = contasFixas.reduce((acc, c) => ((c.pagamentos || []).includes(currentMonth)) ? acc + (parseFloat(c.valor) || 0) : acc, 0);
             const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + (parseFloat(c.valor) || 0), 0);
-
             const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
             const saldoBtcReais = btcHoldings * btcPrice;
 
-            // Formatador BRL
             const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
             const fmtDate = (d) => {
                 if (!d) return '-';
@@ -389,22 +405,7 @@
                 return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
             };
 
-            // Toggle Conta Fixa
-            const toggleContaFixaPaga = (id) => {
-                setContasFixas(contasFixas.map(conta => {
-                    if (conta.id === id) {
-                        const pagamentos = conta.pagamentos || [];
-                        const jaPago = pagamentos.includes(currentMonth);
-                        const novosPagamentos = jaPago 
-                            ? pagamentos.filter(mes => mes !== currentMonth) 
-                            : [...pagamentos, currentMonth];
-                        return { ...conta, pagamentos: novosPagamentos };
-                    }
-                    return conta;
-                }));
-            };
-
-            // Dados para Histórico
+            // Histórico Unificado
             const historicoMes = useMemo(() => {
                 const list = [
                     ...receitasMes.map(r => ({...r, type: 'receita'})),
@@ -425,29 +426,15 @@
                 ).sort((a, b) => new Date(b.data || currentMonth) - new Date(a.data || currentMonth));
             }, [receitasMes, gastosMes, contasFixas, currentMonth, historySearch]);
 
-            // Análise Categorias
             const gastosPorCategoria = useMemo(() => {
                 const group = {};
-                gastosMes.forEach(g => group[g.categoria] = (group[g.categoria] || 0) + g.valor);
+                gastosMes.forEach(g => group[g.categoria] = (group[g.categoria] || 0) + parseFloat(g.valor));
                 if (totalContasPagas > 0) group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
                 return Object.entries(group).map(([cat, val]) => ({ categoria: cat, valor: val })).sort((a, b) => b.valor - a.valor);
             }, [gastosMes, totalContasPagas]);
 
-            // Handlers
-            const handleAddGasto = (e) => { e.preventDefault(); addItem(setGastos, gastos, formGasto, 'gastos'); setFormGasto({...formGasto, descricao: '', valor: ''}); };
-            const handleAddReceita = (e) => { e.preventDefault(); addItem(setReceitas, receitas, formReceita, 'receitas'); setFormReceita({...formReceita, descricao: '', valor: ''}); };
-            const adicionarAnotacao = (e) => { e.preventDefault(); addItem(setAnotacoes, anotacoes, { conteudo: formAnotacao, data: new Date().toISOString() }, 'anotacoes'); setFormAnotacao(''); };
-            
-            const atualizarReserva = (e) => {
-                e.preventDefault();
-                const val = parseFloat(reservaInput);
-                if (!isNaN(val)) {
-                    setReservaEmergencia(val);
-                    setReservaInput('');
-                }
-            };
 
-            // --- VIEW: LOGIN ---
+            // --- VIEW ---
             if (!session) {
                 return (
                     <div className="login-container">
@@ -456,14 +443,8 @@
                             <h2 style={{marginBottom: 10, color: 'var(--text-main)'}}>Finanças Pro</h2>
                             <p style={{marginBottom: 30, color: 'var(--secondary)'}}>Entre para acessar suas finanças</p>
                             <form onSubmit={handleLogin}>
-                                <div className="form-group" style={{textAlign:'left'}}>
-                                    <label>Email</label>
-                                    <input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="seu@email.com" />
-                                </div>
-                                <div className="form-group" style={{textAlign:'left'}}>
-                                    <label>Senha</label>
-                                    <input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="******" />
-                                </div>
+                                <div className="form-group" style={{textAlign:'left'}}><label>Email</label><input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="seu@email.com" /></div>
+                                <div className="form-group" style={{textAlign:'left'}}><label>Senha</label><input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="******" /></div>
                                 <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
                                 <div style={{textAlign:'center', marginTop: 15}}><a href="#" className="login-link" onClick={handleSolicitarLogin}>Solicitar Login</a></div>
                             </form>
@@ -472,7 +453,6 @@
                 );
             }
 
-            // --- VIEW: APLICAÇÃO ---
             return (
                 <div className="container">
                     {/* Header */}
@@ -506,30 +486,14 @@
                     {activeTab === 'dashboard' && (
                         <>
                             <div className="stats-grid">
-                                <div className="stat-card">
-                                    <div className="stat-label">Saldo (Mês)</div>
-                                    <div className={`stat-value ${saldoTotal >= 0 ? 'positive' : 'negative'}`}>{fmtMoney(saldoTotal)}</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-label">Total Recebido</div>
-                                    <div className="stat-value positive">{fmtMoney(totalReceitas)}</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-label">Gastos + Fixas</div>
-                                    <div className="stat-value negative">{fmtMoney(totalGastos + totalContasPagas)}</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-label">Reserva Emergência</div>
-                                    <div className="stat-value warning">{fmtMoney(reservaEmergencia)}</div>
-                                </div>
+                                <div className="stat-card"><div className="stat-label">Saldo (Mês)</div><div className={`stat-value ${saldoTotal >= 0 ? 'positive' : 'negative'}`}>{fmtMoney(saldoTotal)}</div></div>
+                                <div className="stat-card"><div className="stat-label">Total Recebido</div><div className="stat-value positive">{fmtMoney(totalReceitas)}</div></div>
+                                <div className="stat-card"><div className="stat-label">Gastos + Fixas</div><div className="stat-value negative">{fmtMoney(totalGastos + totalContasPagas)}</div></div>
+                                <div className="stat-card"><div className="stat-label">Reserva Emergência</div><div className="stat-value warning">{fmtMoney(reservaEmergencia)}</div></div>
                             </div>
 
-                            {/* Cartão de Edição Rápida da Reserva */}
                             <div className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                <div>
-                                    <h2 style={{marginBottom:5}}>Reserva de Emergência</h2>
-                                    <p style={{fontSize:13, color:'var(--secondary)'}}>Valor guardado para imprevistos</p>
-                                </div>
+                                <div><h2 style={{marginBottom:5}}>Reserva de Emergência</h2><p style={{fontSize:13, color:'var(--secondary)'}}>Valor guardado para imprevistos</p></div>
                                 <form onSubmit={atualizarReserva} style={{display:'flex', gap:10}}>
                                     <input type="number" step="0.01" placeholder="Novo valor..." value={reservaInput} onChange={e => setReservaInput(e.target.value)} style={{width: 150}} />
                                     <button type="submit" className="btn-primary" style={{width:'auto'}}>Atualizar</button>
@@ -542,13 +506,8 @@
                                     {gastosPorCategoria.length === 0 ? <p style={{color:'#94a3b8'}}>Sem gastos este mês.</p> : (
                                         gastosPorCategoria.slice(0, 5).map((cat, idx) => (
                                             <div key={idx} className="category-bar-item">
-                                                <div className="category-header">
-                                                    <span>{cat.categoria}</span>
-                                                    <strong>{fmtMoney(cat.valor)}</strong>
-                                                </div>
-                                                <div className="category-progress-bg">
-                                                    <div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas || 1)) * 100}%`}}></div>
-                                                </div>
+                                                <div className="category-header"><span>{cat.categoria}</span><strong>{fmtMoney(cat.valor)}</strong></div>
+                                                <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas || 1)) * 100}%`}}></div></div>
                                             </div>
                                         ))
                                     )}
@@ -557,13 +516,8 @@
                                     <h2>Últimas Movimentações</h2>
                                     {historicoMes.slice(0, 5).map((item, idx) => (
                                         <div key={idx} className="transaction-item">
-                                            <div className="transaction-info">
-                                                <div className="transaction-description">{item.descricao}</div>
-                                                <div className="transaction-meta">{fmtDate(item.data)} • {item.categoria || 'Geral'}</div>
-                                            </div>
-                                            <div className={`transaction-amount ${item.type === 'receita' ? 'positive' : 'negative'}`}>
-                                                {item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}
-                                            </div>
+                                            <div className="transaction-info"><div className="transaction-description">{item.descricao}</div><div className="transaction-meta">{fmtDate(item.data)} • {item.categoria || 'Geral'}</div></div>
+                                            <div className={`transaction-amount ${item.type === 'receita' ? 'positive' : 'negative'}`}>{item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -575,18 +529,9 @@
                     {activeTab === 'bitcoin' && (
                         <>
                             <div className="stats-grid">
-                                <div className="stat-card">
-                                    <div className="stat-label">Total em Bitcoin</div>
-                                    <div className="stat-value bitcoin">{btcHoldings} BTC</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-label">Valor em Reais (Hoje)</div>
-                                    <div className="stat-value positive">{fmtMoney(saldoBtcReais)}</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-label">Cotação Atual (1 BTC)</div>
-                                    <div className="stat-value">{fmtMoney(btcPrice)}</div>
-                                </div>
+                                <div className="stat-card"><div className="stat-label">Total em Bitcoin</div><div className="stat-value bitcoin">{btcHoldings} BTC</div></div>
+                                <div className="stat-card"><div className="stat-label">Valor em Reais (Hoje)</div><div className="stat-value positive">{fmtMoney(saldoBtcReais)}</div></div>
+                                <div className="stat-card"><div className="stat-label">Cotação Atual (1 BTC)</div><div className="stat-value">{fmtMoney(btcPrice)}</div></div>
                             </div>
                             
                             <div className="card">
@@ -596,7 +541,7 @@
                                         <label>Atualizar Quantidade de BTC</label>
                                         <div style={{display:'flex', gap: 10}}>
                                             <input type="number" step="0.00000001" value={btcHoldings} onChange={e => setBtcHoldings(e.target.value)} />
-                                            <button className="btn-primary" style={{width:'auto'}} onClick={() => alert('Saldo BTC atualizado!')}>Salvar</button>
+                                            <button className="btn-primary" style={{width:'auto'}} onClick={saveBtcHoldings}>Salvar</button>
                                         </div>
                                         <p style={{fontSize:12, color:'var(--secondary)', marginTop:5}}>Insira a fração exata (ex: 0.00540000)</p>
                                     </div>
@@ -649,7 +594,7 @@
                                     <div className="form-row">
                                         <div className="form-group"><label>Descrição</label><input required type="text" value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
                                         <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
-                                        </div>
+                                    </div>
                                     <div className="form-row">
                                         <div className="form-group"><label>Categoria</label>
                                             <select value={formGasto.categoria} onChange={e => setFormGasto({...formGasto, categoria: e.target.value})}>
@@ -677,7 +622,7 @@
                                         </div>
                                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
                                             <div className="transaction-amount negative">- {fmtMoney(g.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem(setGastos, gastos, g.id, 'gastos')}><IconTrash /></button>
+                                            <button className="btn-icon delete" onClick={() => delItem('gastos', setGastos, gastos, g.id)}><IconTrash /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -712,7 +657,7 @@
                                         </div>
                                         <div style={{display:'flex', alignItems:'center', gap: 15}}>
                                             <div className="transaction-amount positive">+ {fmtMoney(r.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem(setReceitas, receitas, r.id, 'receitas')}><IconTrash /></button>
+                                            <button className="btn-icon delete" onClick={() => delItem('receitas', setReceitas, receitas, r.id)}><IconTrash /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -724,7 +669,7 @@
                     {activeTab === 'contasFixas' && (
                          <div className="card">
                             <h2>Contas Fixas (Mensais)</h2>
-                                <form onSubmit={(e) => { e.preventDefault(); addItem(setContasFixas, contasFixas, formContaFixa, 'contasFixas'); setFormContaFixa({...formContaFixa, descricao: '', valor: ''}); }} style={{marginBottom: 20}}>
+                            <form onSubmit={adicionarContaFixa} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formContaFixa.descricao} onChange={e => setFormContaFixa({...formContaFixa, descricao: e.target.value})} /></div>
                                     <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
@@ -744,8 +689,8 @@
                                     </div>
                                     <div style={{display:'flex', gap: 10, alignItems:'center'}}>
                                         <div className="transaction-amount" style={{color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{fmtMoney(c.valor)}</div>
-                                        <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} title={isPaid ? "Marcar como não pago" : "Marcar como pago"} onClick={() => toggleContaFixaPaga(c.id)}><IconCheck /></button>
-                                        <button className="btn-icon delete" onClick={()=>delItem(setContasFixas, contasFixas, c.id, 'contasFixas')}><IconTrash/></button>
+                                        <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} title={isPaid ? "Marcar como não pago" : "Marcar como pago"} onClick={() => toggleContaFixaPaga(c)}><IconCheck /></button>
+                                        <button className="btn-icon delete" onClick={()=>delItem('contasFixas', setContasFixas, contasFixas, c.id)}><IconTrash/></button>
                                     </div>
                                 </div>
                             )})}
@@ -756,7 +701,7 @@
                     {activeTab === 'dividas' && (
                         <div className="card">
                             <h2>Gestão de Dívidas</h2>
-                             <form onSubmit={(e) => { e.preventDefault(); addItem(setDividas, dividas, {...formDivida, valorTotal: formDivida.valorTotal, valorPago: 0}, 'dividas'); setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1}); }} style={{marginBottom: 20}}>
+                             <form onSubmit={adicionarDivida} style={{marginBottom: 20}}>
                                 <div className="form-row">
                                     <div className="form-group"><label>Descrição</label><input required value={formDivida.descricao} onChange={e => setFormDivida({...formDivida, descricao: e.target.value})} /></div>
                                     <div className="form-group"><label>Total (R$)</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
@@ -765,14 +710,14 @@
                                 <button type="submit" className="btn-primary">Adicionar Dívida</button>
                             </form>
                             {dividas.map(d => {
-                                const p = (d.valorPago/d.valorTotal)*100;
+                                const p = (d.valor_pago/d.valor_total)*100;
                                 return (
                                 <div key={d.id} className="transaction-item" style={{display:'block'}}>
                                     <div style={{display:'flex', justifyContent:'space-between', marginBottom: 5}}>
-                                        <div><div className="transaction-description">{d.descricao}</div><small style={{color:'var(--danger)'}}>Restante: {fmtMoney(d.valorTotal - d.valorPago)}</small></div>
+                                        <div><div className="transaction-description">{d.descricao}</div><small style={{color:'var(--danger)'}}>Restante: {fmtMoney(d.valor_total - d.valor_pago)}</small></div>
                                         <div style={{display:'flex', gap: 5}}>
-                                            <button className="btn-icon edit" onClick={() => { setDividaSelecionada(d); setModalDividaOpen(true); setNovaParcelaInput(d.parcelaAtual); }}><IconRefresh/></button>
-                                            <button className="btn-icon delete" onClick={()=>delItem(setDividas, dividas, d.id, 'dividas')}><IconTrash/></button>
+                                            <button className="btn-icon edit" onClick={() => { setDividaSelecionada(d); setModalDividaOpen(true); setNovaParcelaInput(d.parcela_atual); }}><IconRefresh/></button>
+                                            <button className="btn-icon delete" onClick={()=>delItem('dividas', setDividas, dividas, d.id)}><IconTrash/></button>
                                         </div>
                                     </div>
                                     <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${p}%`}}></div></div>
@@ -788,7 +733,7 @@
                                 <textarea value={formAnotacao} onChange={e => setFormAnotacao(e.target.value)} placeholder="Nova nota..." style={{minHeight: 80, marginBottom: 10}}></textarea>
                                 <button type="submit" className="btn-primary">Salvar</button>
                             </form>
-                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem(setAnotacoes, anotacoes, a.id, 'anotacoes')}><IconTrash/></button></div>)}
+                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem('anotacoes', setAnotacoes, anotacoes, a.id)}><IconTrash/></button></div>)}
                         </div>
                     )}
 
@@ -804,13 +749,7 @@
                                 <div className="form-group"><label>Parcela Atual</label><input type="number" value={novaParcelaInput} onChange={e => setNovaParcelaInput(e.target.value)} /></div>
                                 <div style={{display:'flex', gap: 10, justifyContent:'flex-end'}}>
                                     <button className="btn-ghost" onClick={()=>setModalDividaOpen(false)}>Cancelar</button>
-                                    <button className="btn-primary" style={{width:'auto'}} onClick={() => {
-                                        const extra = parseFloat(valorPagamentoInput) || 0;
-                                        const parc = parseInt(novaParcelaInput) || dividaSelecionada.parcelaAtual;
-                                        setDividas(dividas.map(d => d.id === dividaSelecionada.id ? { ...d, valorPago: Math.min(d.valorTotal, d.valorPago + extra), parcelaAtual: parc } : d));
-                                        setModalDividaOpen(false);
-                                        setValorPagamentoInput('');
-                                    }}>Salvar</button>
+                                    <button className="btn-primary" style={{width:'auto'}} onClick={atualizarDivida}>Salvar</button>
                                 </div>
                             </div>
                         </div>
