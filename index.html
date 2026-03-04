@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Escala Church - Apple UI</title>
     
-    <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Phosphor Icons for Apple-like sleek icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
@@ -127,7 +124,7 @@
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 12px;
             text-align: center;
         }
         .calendar-day {
@@ -136,16 +133,16 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            font-size: 0.9rem;
+            font-size: 1rem;
             position: relative;
         }
         .calendar-day.has-event::after {
             content: '';
             position: absolute;
-            bottom: 4px;
-            width: 4px;
-            height: 4px;
-            background-color: #ffffff; /* White dot */
+            bottom: 2px;
+            width: 5px;
+            height: 5px;
+            background-color: #ffffff;
             border-radius: 50%;
         }
         .calendar-day.today {
@@ -153,7 +150,6 @@
             font-weight: bold;
         }
 
-        /* Hide scrollbar for clean UI */
         ::-webkit-scrollbar {
             width: 0px;
             background: transparent;
@@ -162,20 +158,55 @@
 </head>
 <body class="antialiased min-h-screen">
 
-    <!-- App Container -->
+    <div class="bg-animated"></div>
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+
     <div class="max-w-md mx-auto min-h-screen relative p-4 flex flex-col">
 
-        <!-- ============================================== -->
-        <!-- VIEW: LOGIN                                    -->
-        <!-- ============================================== -->
+        <div id="view-home" class="view flex-1 flex flex-col pb-20 active">
+            <div class="flex justify-between items-start py-4 mb-6 relative">
+                <div>
+                    <h2 class="text-sm font-medium text-white/60 uppercase tracking-wider" id="current-month-label">Mês</h2>
+                    <h1 class="text-3xl font-bold">Agenda</h1>
+                </div>
+                
+                <div class="absolute top-4 right-0 flex gap-3 items-center">
+                    <button id="btn-login-small" onclick="navigateTo('view-login')" class="text-white/40 hover:text-white transition-colors duration-300 p-1">
+                        <i class="ph ph-user text-2xl"></i>
+                    </button>
+                    
+                    <button id="btn-add-event" onclick="navigateTo('view-add')" class="glass-btn-secondary w-9 h-9 flex items-center justify-center rounded-full hidden">
+                        <i class="ph ph-plus text-lg"></i>
+                    </button>
+                    <button id="btn-logout" onclick="logout()" class="text-white/40 hover:text-red-400 transition-colors duration-300 p-1 hidden">
+                        <i class="ph ph-sign-out text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 mb-6">
+                <div class="calendar-grid text-white/50 text-xs mb-4 font-medium">
+                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                </div>
+                <div id="calendar-days" class="calendar-grid">
+                    </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-white/40 text-xs">Toque nas datas marcadas com um ponto para ver a escala.</p>
+            </div>
+        </div>
+
+
         <div id="view-login" class="view flex-1 flex flex-col justify-center">
             <button onclick="navigateTo('view-home')" class="text-white/60 text-sm absolute top-8 left-4 flex items-center gap-1 hover:text-white transition">
                 <i class="ph ph-arrow-left"></i> Voltar
             </button>
             <div class="glass-panel p-8 text-center mt-10">
-                <i class="ph ph-church text-5xl mb-4 text-white/80"></i>
-                <h1 class="text-2xl font-semibold mb-1">Escala Church</h1>
-                <p class="text-white/50 text-sm mb-8">Faça login para gerenciar as escalas</p>
+                <i class="ph ph-lock-key text-5xl mb-4 text-white/80"></i>
+                <h1 class="text-2xl font-semibold mb-1">Acesso Restrito</h1>
+                <p class="text-white/50 text-sm mb-8">Faça login para gerenciar e salvar novas escalas</p>
                 
                 <form id="login-form" class="space-y-4">
                     <div>
@@ -184,95 +215,40 @@
                     <div>
                         <input type="password" id="password" placeholder="Senha" class="glass-input w-full p-4" required>
                     </div>
-                    <button type="submit" class="glass-btn w-full p-4 mt-2 shadow-lg">Entrar</button>
+                    <button type="submit" class="glass-btn w-full p-4 mt-2 shadow-lg">Entrar no Sistema</button>
                 </form>
             </div>
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- VIEW: HOME (DASHBOARD)                         -->
-        <!-- ============================================== -->
-        <div id="view-home" class="view flex-1 flex flex-col pb-20">
-            <!-- Header -->
-            <div class="flex justify-between items-center py-4 mb-2">
-                <div>
-                    <h2 class="text-sm font-medium text-white/60 uppercase tracking-wider" id="current-month-label">Mês</h2>
-                    <h1 class="text-3xl font-bold">Agenda</h1>
-                </div>
-                <div class="flex gap-2">
-                    <button id="btn-login-small" onclick="navigateTo('view-login')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center">
-                        <i class="ph ph-user text-xl"></i>
-                    </button>
-                    <button id="btn-add-event" onclick="navigateTo('view-add')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center hidden">
-                        <i class="ph ph-plus text-xl"></i>
-                    </button>
-                    <button id="btn-logout" onclick="logout()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center hidden">
-                        <i class="ph ph-sign-out text-xl"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Calendar Section -->
-            <div class="glass-panel p-5 mb-6">
-                <div class="calendar-grid text-white/50 text-xs mb-2 font-medium">
-                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
-                </div>
-                <div id="calendar-days" class="calendar-grid">
-                    <!-- Days will be generated by JS -->
-                </div>
-            </div>
-
-            <!-- Upcoming Events Section -->
-            <div class="mb-2 flex justify-between items-end">
-                <h2 class="text-xl font-semibold">Próximos Cultos</h2>
-            </div>
-            
-            <div id="upcoming-events-container" class="space-y-3">
-                <!-- Event Cards will be generated by JS -->
-                <div class="text-center py-8 text-white/50 text-sm">Carregando eventos...</div>
-            </div>
-        </div>
-
-
-        <!-- ============================================== -->
-        <!-- VIEW: EVENT DETAIL                             -->
-        <!-- ============================================== -->
         <div id="view-detail" class="view flex-1 flex flex-col">
-            <!-- Header -->
             <div class="flex items-center py-4 mb-4">
-                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4">
+                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4 rounded-full">
                     <i class="ph ph-caret-left text-xl"></i>
                 </button>
                 <div class="flex-1">
                     <h2 class="text-sm text-white/60 font-medium" id="detail-date">00/00/0000</h2>
                     <h1 class="text-2xl font-bold" id="detail-title">Culto</h1>
                 </div>
-                <button id="btn-delete-event" onclick="deleteCurrentEvent()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center text-red-400 hidden">
+                <button id="btn-delete-event" onclick="deleteCurrentEvent()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center text-red-400 hidden rounded-full">
                     <i class="ph ph-trash text-xl"></i>
                 </button>
             </div>
 
-            <!-- Roster List -->
             <div class="glass-panel p-2 space-y-1" id="detail-roster">
-                <!-- Populated by JS -->
-            </div>
+                </div>
         </div>
 
 
-        <!-- ============================================== -->
-        <!-- VIEW: ADD EVENT                                -->
-        <!-- ============================================== -->
         <div id="view-add" class="view flex-1 flex flex-col pb-8">
             <div class="flex items-center py-4 mb-4">
-                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4">
+                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4 rounded-full">
                     <i class="ph ph-x text-xl"></i>
                 </button>
                 <h1 class="text-2xl font-bold">Nova Escala</h1>
             </div>
 
             <form id="add-event-form" class="space-y-4 glass-panel p-5">
-                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-white/60 mb-1 ml-1">Data</label>
@@ -280,51 +256,44 @@
                     </div>
                     <div>
                         <label class="block text-xs text-white/60 mb-1 ml-1">Título do Culto</label>
-                        <input type="text" id="add-title" placeholder="Ex: Culto de Domingo" class="glass-input w-full p-3 text-sm" required>
+                        <input type="text" id="add-title" placeholder="Ex: Domingo Manhã" class="glass-input w-full p-3 text-sm" required>
                     </div>
                 </div>
 
                 <div class="space-y-3 mt-4">
-                    <h3 class="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Equipe</h3>
+                    <h3 class="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Equipe da Escala</h3>
                     
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-microphone-stage text-xl"></i></div>
                         <input type="text" id="add-dirigente" placeholder="Dirigente" class="glass-input flex-1 p-3 text-sm">
                     </div>
-                    
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-book-open-text text-xl"></i></div>
                         <input type="text" id="add-pregador" placeholder="Pregador(a)" class="glass-input flex-1 p-3 text-sm">
                     </div>
-                    
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-music-notes text-xl"></i></div>
-                        <input type="text" id="add-louvor" placeholder="Louvor (Banda/Vocal)" class="glass-input flex-1 p-3 text-sm">
+                        <input type="text" id="add-louvor" placeholder="Louvor" class="glass-input flex-1 p-3 text-sm">
                     </div>
-
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-handshake text-xl"></i></div>
                         <input type="text" id="add-acolhimento" placeholder="Acolhimento" class="glass-input flex-1 p-3 text-sm">
                     </div>
-
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-video-camera text-xl"></i></div>
                         <input type="text" id="add-projecao" placeholder="Projeção / Live" class="glass-input flex-1 p-3 text-sm">
                     </div>
-
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-megaphone text-xl"></i></div>
                         <input type="text" id="add-marketing" placeholder="Marketing" class="glass-input flex-1 p-3 text-sm">
                     </div>
-
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-baby text-xl"></i></div>
                         <input type="text" id="add-kids" placeholder="Kids" class="glass-input flex-1 p-3 text-sm">
                     </div>
-
                     <div class="flex items-center gap-3">
                         <div class="w-8 flex justify-center text-white/50"><i class="ph ph-sliders text-xl"></i></div>
-                        <input type="text" id="add-tecnica" placeholder="Técnica (Som/Luz)" class="glass-input flex-1 p-3 text-sm">
+                        <input type="text" id="add-tecnica" placeholder="Técnica" class="glass-input flex-1 p-3 text-sm">
                     </div>
                 </div>
 
@@ -334,44 +303,29 @@
 
     </div>
 
-    <!-- Notification Toast -->
     <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full shadow-2xl font-medium text-sm transition-all duration-300 opacity-0 pointer-events-none z-50">
         Mensagem
     </div>
 
     <script>
-        // ==========================================
-        // CONFIGURAÇÃO SUPABASE
-        // ==========================================
         const SUPABASE_URL = 'https://qihnrltjjpfirsgtfvtr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpaG5ybHRqanBmaXJzZ3RmdnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDI2NDMsImV4cCI6MjA4ODIxODY0M30.dS5raMLod4ktt33R_u3EEqZfYM25L1Vp-RBy0eaaj5k';
-        
-        // Renomeado de "supabase" para "supabaseClient" para evitar erro de colisão (SyntaxError)
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ==========================================
-        // ESTADO GLOBAL DO APP
-        // ==========================================
         let currentUser = null;
         let allEvents = [];
         let selectedEventId = null;
-
         const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-        // ==========================================
-        // INICIALIZAÇÃO
-        // ==========================================
         async function init() {
-            // Verificar sessão atual
             const { data: { session } } = await supabaseClient.auth.getSession();
             updateAuthUI(session);
 
-            // Listener de Auth
             supabaseClient.auth.onAuthStateChange((_event, session) => {
                 updateAuthUI(session);
             });
             
-            // Sempre iniciar na tela de calendário
+            // Força a tela de calendário como primeira tela sempre
             navigateTo('view-home');
             loadDashboard();
         }
@@ -390,9 +344,6 @@
             }
         }
 
-        // ==========================================
-        // NAVEGAÇÃO
-        // ==========================================
         function navigateTo(viewId) {
             document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -412,24 +363,22 @@
             }, 3000);
         }
 
-        // ==========================================
-        // AUTENTICAÇÃO
-        // ==========================================
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const btn = e.target.querySelector('button');
-            btn.textContent = 'Entrando...';
+            btn.textContent = 'Autenticando...';
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             
             if (error) {
                 showToast('Erro no login. Verifique as credenciais.', true);
-                btn.textContent = 'Entrar';
+                btn.textContent = 'Entrar no Sistema';
             } else {
-                showToast('Login efetuado!');
-                btn.textContent = 'Entrar';
+                showToast('Login efetuado! Agora você pode gerenciar escalas.');
+                btn.textContent = 'Entrar no Sistema';
+                document.getElementById('login-form').reset();
                 navigateTo('view-home');
                 loadDashboard();
             }
@@ -441,20 +390,14 @@
             showToast('Você saiu com sucesso.');
         }
 
-        // ==========================================
-        // LÓGICA DO DASHBOARD (CALENDÁRIO E EVENTOS)
-        // ==========================================
         async function loadDashboard() {
             const today = new Date();
             document.getElementById('current-month-label').textContent = `${months[today.getMonth()]} ${today.getFullYear()}`;
-            
             await fetchEvents();
             renderCalendar(today);
-            renderUpcomingEvents();
         }
 
         async function fetchEvents() {
-            // Busca eventos do mês atual em diante
             const { data, error } = await supabaseClient
                 .from('escala_cultos')
                 .select('*')
@@ -462,7 +405,6 @@
 
             if (error) {
                 console.error("Erro ao buscar eventos:", error);
-                showToast('Erro ao carregar dados', true);
             } else {
                 allEvents = data || [];
             }
@@ -479,33 +421,24 @@
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Espaços vazios
             for (let i = 0; i < firstDay; i++) {
-                const emptyDiv = document.createElement('div');
-                grid.appendChild(emptyDiv);
+                grid.appendChild(document.createElement('div'));
             }
 
-            // Dias do mês
             for (let i = 1; i <= daysInMonth; i++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'calendar-day';
                 dayDiv.textContent = i;
 
-                // Formatar data YYYY-MM-DD local
-                const currentDate = new Date(year, month, i);
-                // Adjusting timezone issue simply by padding
                 const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
 
-                // É hoje?
                 if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                     dayDiv.classList.add('today');
                 }
 
-                // Tem evento?
                 const eventForDay = allEvents.find(e => e.data_culto === dateString);
                 if (eventForDay) {
-                    dayDiv.classList.add('has-event');
-                    dayDiv.classList.add('cursor-pointer', 'hover:bg-white/10', 'transition');
+                    dayDiv.classList.add('has-event', 'cursor-pointer', 'hover:bg-white/10', 'transition');
                     dayDiv.onclick = () => openEventDetail(eventForDay);
                 }
 
@@ -513,66 +446,18 @@
             }
         }
 
-        function renderUpcomingEvents() {
-            const container = document.getElementById('upcoming-events-container');
-            container.innerHTML = '';
-
-            // Filtrar eventos de hoje em diante e pegar os 4 próximos
-            const todayStr = new Date().toISOString().split('T')[0];
-            const upcoming = allEvents.filter(e => e.data_culto >= todayStr).slice(0, 4);
-
-            if (upcoming.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-white/50 text-sm glass-panel">Nenhum culto programado para os próximos dias.</div>';
-                return;
-            }
-
-            upcoming.forEach(event => {
-                // Parse date for UI
-                const [y, m, d] = event.data_culto.split('-');
-                const dateObj = new Date(y, m - 1, d);
-                const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dateObj.getDay()];
-                const formattedDate = `${d}/${m}`;
-
-                const card = document.createElement('div');
-                card.className = 'glass-panel p-4 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors';
-                card.onclick = () => openEventDetail(event);
-
-                card.innerHTML = `
-                    <div class="flex items-center gap-4">
-                        <div class="bg-white/10 rounded-xl w-14 h-14 flex flex-col items-center justify-center border border-white/5">
-                            <span class="text-xs text-white/60 font-medium">${dayName}</span>
-                            <span class="text-lg font-bold">${d}</span>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-lg">${event.titulo}</h3>
-                            <p class="text-white/60 text-sm"><i class="ph ph-microphone-stage mr-1"></i>${event.pregador || 'A definir'}</p>
-                        </div>
-                    </div>
-                    <i class="ph ph-caret-right text-white/40"></i>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        // ==========================================
-        // DETALHES DO EVENTO
-        // ==========================================
         function openEventDetail(event) {
             selectedEventId = event.id;
-            
-            // Format Title and Date
             const [y, m, d] = event.data_culto.split('-');
             document.getElementById('detail-date').textContent = `${d}/${m}/${y}`;
             document.getElementById('detail-title').textContent = event.titulo;
 
-            // Admin features
             if (currentUser) {
                 document.getElementById('btn-delete-event').classList.remove('hidden');
             } else {
                 document.getElementById('btn-delete-event').classList.add('hidden');
             }
 
-            // Render Roster items
             const rosterContainer = document.getElementById('detail-roster');
             rosterContainer.innerHTML = '';
 
@@ -589,10 +474,8 @@
 
             roles.forEach((role, index) => {
                 const value = event[role.key] || '<span class="text-white/30 italic">A definir</span>';
-                
                 const item = document.createElement('div');
                 item.className = `flex items-center p-3 ${index !== roles.length -1 ? 'border-b border-white/5' : ''}`;
-                
                 item.innerHTML = `
                     <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-3 border border-white/5">
                         <i class="ph ${role.icon} text-lg text-white"></i>
@@ -625,12 +508,8 @@
             }
         }
 
-        // ==========================================
-        // ADICIONAR NOVO EVENTO
-        // ==========================================
         document.getElementById('add-event-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = document.getElementById('btn-save');
             btn.textContent = 'Salvando...';
 
@@ -647,9 +526,7 @@
                 tecnica: document.getElementById('add-tecnica').value,
             };
 
-            const { data, error } = await supabaseClient
-                .from('escala_cultos')
-                .insert([newEvent]);
+            const { data, error } = await supabaseClient.from('escala_cultos').insert([newEvent]);
 
             if (error) {
                 console.error(error);
@@ -664,9 +541,7 @@
             }
         });
 
-        // Initialize App on load
         window.onload = init;
-
     </script>
 </body>
 </html>
