@@ -1,547 +1,908 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Escala Church - Apple UI</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Escala de Cultos</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ─── RESET & BASE ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <style>
-        /* Apple-like Typography */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
+  :root {
+    --blue:    #007AFF;
+    --purple:  #5856D6;
+    --green:   #34C759;
+    --orange:  #FF9500;
+    --red:     #FF3B30;
+    --gray1:   #8E8E93;
+    --gray2:   #636366;
+    --gray3:   #48484A;
+    --gray4:   #3A3A3C;
+    --gray5:   #2C2C2E;
+    --gray6:   #1C1C1E;
+    --bg:      #000000;
+    --surface: rgba(28, 28, 30, 0.72);
+    --glass:   rgba(255,255,255,0.07);
+    --glassBorder: rgba(255,255,255,0.12);
+    --text:    #FFFFFF;
+    --text2:   rgba(255,255,255,0.60);
+    --text3:   rgba(255,255,255,0.35);
+    --r-sm:    12px;
+    --r-md:    18px;
+    --r-lg:    24px;
+    --r-xl:    32px;
+    --blur:    blur(40px) saturate(180%);
+    --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
 
-        /* Animated Gradient Background for Glassmorphism contrast */
-        .bg-animated {
-            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #4b0082);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-        }
+  html { height: 100%; }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+  body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
 
-        /* Abstract glowing orbs for extra Apple Glass effect */
-        .orb-1, .orb-2 {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.6;
-        }
-        .orb-1 {
-            width: 300px; height: 300px;
-            background: #ff2a5f;
-            top: -50px; left: -50px;
-        }
-        .orb-2 {
-            width: 400px; height: 400px;
-            background: #00d2ff;
-            bottom: -100px; right: -100px;
-        }
+  /* ─── BACKGROUND ─── */
+  .bg-orbs {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .bg-orbs span {
+    position: absolute; border-radius: 50%; filter: blur(120px); opacity: .45;
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  .bg-orbs span:nth-child(1) { width:600px; height:600px; background:#1a1aff; top:-200px; left:-200px; animation-duration:18s; }
+  .bg-orbs span:nth-child(2) { width:500px; height:500px; background:#4a0080; top:30%; right:-150px; animation-duration:22s; animation-delay:-8s; }
+  .bg-orbs span:nth-child(3) { width:400px; height:400px; background:#002244; bottom:-100px; left:30%; animation-duration:15s; animation-delay:-4s; }
+  @keyframes drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.05); } }
 
-        /* Glassmorphism Classes */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            border-radius: 24px;
-        }
+  /* ─── SCREENS ─── */
+  .screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; transition: opacity var(--transition), transform var(--transition); }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(0.97) translateY(16px); }
 
-        .glass-input {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        .glass-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
-        }
+  /* ─── GLASS CARD ─── */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glassBorder);
+    border-radius: var(--r-lg);
+  }
 
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.9);
-            color: #000;
-            font-weight: 600;
-            border-radius: 14px;
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .glass-btn:active {
-            transform: scale(0.96);
-            opacity: 0.8;
-        }
+  /* ═══════════════════════════════════════════
+     LOGIN SCREEN
+  ═══════════════════════════════════════════ */
+  #screen-login {
+    align-items: center; justify-content: center;
+    background: transparent;
+  }
 
-        .glass-btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-radius: 14px;
-            transition: transform 0.2s, background 0.2s;
-        }
-        .glass-btn-secondary:active {
-            transform: scale(0.96);
-            background: rgba(255, 255, 255, 0.2);
-        }
+  .login-card {
+    width: 100%; max-width: 400px; padding: 48px 40px;
+    display: flex; flex-direction: column; gap: 28px;
+    animation: fadeUp .6s ease both;
+  }
 
-        /* Smooth View Transitions */
-        .view {
-            display: none;
-            animation: fadeIn 0.4s ease forwards;
-        }
-        .view.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
 
-        /* Calendar grid */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 12px;
-            text-align: center;
-        }
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-size: 1rem;
-            position: relative;
-        }
-        .calendar-day.has-event::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            width: 5px;
-            height: 5px;
-            background-color: #ffffff;
-            border-radius: 50%;
-        }
-        .calendar-day.today {
-            background-color: rgba(255, 255, 255, 0.2);
-            font-weight: bold;
-        }
+  .login-logo {
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .login-logo .icon {
+    width: 68px; height: 68px; border-radius: 20px;
+    background: linear-gradient(145deg, #1a6fff, #005cd6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; box-shadow: 0 20px 60px rgba(0,122,255,.4);
+  }
+  .login-logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .login-logo p  { font-size: 13px; color: var(--text2); }
 
-        ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
-    </style>
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label { font-size: 13px; font-weight: 500; color: var(--text2); letter-spacing: .3px; }
+  .field input {
+    width: 100%; padding: 14px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glassBorder);
+    border-radius: var(--r-sm);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field input::placeholder { color: var(--text3); }
+  .field input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0,122,255,.18);
+  }
+
+  .btn-primary {
+    width: 100%; padding: 15px;
+    background: var(--blue);
+    border: none; border-radius: var(--r-sm);
+    color: #fff; font-size: 16px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background .2s, transform .15s, box-shadow .2s;
+    box-shadow: 0 8px 30px rgba(0,122,255,.35);
+  }
+  .btn-primary:hover  { background: #0066DD; box-shadow: 0 12px 40px rgba(0,122,255,.45); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+  .login-error {
+    font-size: 13px; color: var(--red); text-align: center;
+    min-height: 18px; transition: opacity .2s;
+  }
+
+  /* ═══════════════════════════════════════════
+     MAIN SCREEN — CALENDÁRIO
+  ═══════════════════════════════════════════ */
+  #screen-main {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-bottom: 1px solid var(--glassBorder);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(145deg, #1a6fff, #005cd6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .topbar h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--glassBorder);
+  }
+  .btn-logout {
+    padding: 7px 14px; border-radius: 8px;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glassBorder);
+    color: var(--text2); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: all .2s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.14); color: var(--text); }
+
+  /* ─── CONTENT ─── */
+  .content { padding: 28px 24px 40px; max-width: 900px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 32px; }
+
+  /* ─── CALENDAR ─── */
+  .calendar-wrap { display: flex; flex-direction: column; gap: 0; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--glassBorder);
+  }
+  .cal-month-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .cal-nav { display: flex; gap: 8px; }
+  .cal-nav button {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glassBorder);
+    color: var(--text); font-size: 16px; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-nav button:hover { background: rgba(255,255,255,0.16); }
+
+  .cal-grid { padding: 16px 24px 20px; }
+  .cal-days-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 8px;
+  }
+  .cal-day-label { text-align: center; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .8px; padding: 4px 0; text-transform: uppercase; }
+
+  .cal-cells { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start; padding: 6px 4px;
+    cursor: default; position: relative; transition: background .15s;
+  }
+  .cal-cell.has-event { cursor: pointer; }
+  .cal-cell.has-event:hover { background: rgba(255,255,255,0.08); }
+  .cal-cell.today .cal-num {
+    background: var(--blue); color: #fff;
+    border-radius: 50%; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-num { font-size: 14px; font-weight: 500; color: var(--text2); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+  .cal-cell.other-month .cal-num { color: var(--text3); }
+  .cal-dots { display: flex; gap: 3px; margin-top: 3px; flex-wrap: wrap; justify-content: center; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  /* ─── WEEK EVENTS ─── */
+  .section-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
+  .section-sub   { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 16px; }
+
+  .event-card {
+    padding: 20px; cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+    animation: fadeUp .4s ease both;
+    position: relative; overflow: hidden;
+  }
+  .event-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent-color, var(--blue));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  .event-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,.4); background: rgba(255,255,255,0.1); }
+  .event-card:active { transform: scale(0.98); }
+
+  .event-date-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); color: var(--text2); margin-bottom: 12px;
+  }
+  .event-date-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-color, var(--blue)); }
+  .event-card h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; margin-bottom: 6px; line-height: 1.3; }
+  .event-card p  { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .event-time    { margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--accent-color, var(--blue)); }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px; color: var(--text2);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .empty-state .icon { font-size: 40px; opacity: .4; }
+  .empty-state p { font-size: 15px; }
+
+  /* ─── ADD EVENT BTN ─── */
+  .fab {
+    position: fixed; bottom: 28px; right: 28px; z-index: 100;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--blue); border: none;
+    color: #fff; font-size: 26px; cursor: pointer;
+    box-shadow: 0 8px 32px rgba(0,122,255,.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, box-shadow .2s;
+    font-family: inherit;
+  }
+  .fab:hover { transform: scale(1.08); box-shadow: 0 12px 48px rgba(0,122,255,.6); }
+  .fab:active { transform: scale(0.96); }
+
+  /* ═══════════════════════════════════════════
+     DETAIL SCREEN
+  ═══════════════════════════════════════════ */
+  #screen-detail { overflow-y: auto; }
+
+  .detail-topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 24px;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-bottom: 1px solid var(--glassBorder);
+  }
+  .btn-back {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glassBorder);
+    color: var(--blue); font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all .2s;
+  }
+  .btn-back:hover { background: rgba(255,255,255,0.14); }
+  .detail-topbar-title { font-size: 17px; font-weight: 700; }
+
+  .detail-content { padding: 28px 24px 60px; max-width: 700px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+
+  .detail-hero {
+    padding: 28px;
+    position: relative; overflow: hidden;
+  }
+  .detail-hero::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--detail-color, var(--blue));
+  }
+  .detail-hero-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); color: var(--text2); margin-bottom: 14px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .detail-hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 8px; line-height: 1.2; }
+  .detail-hero-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+  .detail-meta-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--glassBorder);
+    font-size: 13px; color: var(--text2); font-weight: 500;
+  }
+  .detail-meta-icon { font-size: 15px; }
+
+  .escala-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.3px; }
+  .escala-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .escala-item {
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    transition: background .15s;
+  }
+  .escala-item:hover { background: rgba(255,255,255,0.09); }
+
+  .escala-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .escala-info { flex: 1; }
+  .escala-funcao { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 3px; }
+  .escala-nome   { font-size: 16px; font-weight: 600; }
+  .escala-empty  { font-size: 14px; color: var(--text3); font-style: italic; }
+
+  /* ─── FUNCÃO COLORS ─── */
+  .fn-dirigente     { background: rgba(0,122,255,.18);   color: #60a5fa; }
+  .fn-pregador      { background: rgba(88,86,214,.18);   color: #a78bfa; }
+  .fn-louvor        { background: rgba(255,149,0,.18);   color: #fbbf24; }
+  .fn-acolhimento   { background: rgba(52,199,89,.18);   color: #4ade80; }
+  .fn-projecao_live { background: rgba(255,59,48,.18);   color: #f87171; }
+  .fn-marketing     { background: rgba(255,45,146,.18);  color: #f472b6; }
+  .fn-kids          { background: rgba(90,200,250,.18);  color: #7dd3fc; }
+  .fn-tecnica       { background: rgba(142,142,147,.18); color: #9ca3af; }
+
+  /* ═══════════════════════════════════════════
+     MODAL — ADD/EDIT EVENT
+  ═══════════════════════════════════════════ */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+    background: var(--gray6);
+    border: 1px solid var(--glassBorder);
+    border-radius: var(--r-xl);
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 20px;
+    transform: scale(.95) translateY(20px);
+    transition: transform var(--transition);
+    backdrop-filter: var(--blur);
+  }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+  .modal-header { display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .btn-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: none;
+    color: var(--text2); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .btn-close:hover { background: rgba(255,255,255,0.18); color: var(--text); }
+
+  .modal-fields { display: flex; flex-direction: column; gap: 14px; }
+  .modal-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .modal-fields .field input,
+  .modal-fields .field select {
+    width: 100%; padding: 12px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glassBorder);
+    border-radius: 10px;
+    color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .modal-fields .field select option { background: var(--gray5); }
+  .modal-fields .field input:focus,
+  .modal-fields .field select:focus {
+    border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.18);
+  }
+
+  .escala-form { display: flex; flex-direction: column; gap: 10px; }
+  .escala-form-item {
+    display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: center;
+  }
+  .escala-form-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+  }
+  .escala-form-label .ei { font-size: 16px; }
+  .modal-divider { border: none; border-top: 1px solid var(--glassBorder); }
+
+  /* ─── SPINNER ─── */
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    animation: spin .6s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-center { display: flex; justify-content: center; padding: 48px; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    .content { padding: 20px 16px 40px; }
+    .cal-header { padding: 18px 16px 14px; }
+    .cal-grid   { padding: 12px 16px 16px; }
+    .events-grid { grid-template-columns: 1fr 1fr; }
+    .modal-row { grid-template-columns: 1fr; }
+    .escala-form-item { grid-template-columns: 1fr; }
+    .detail-hero h1 { font-size: 22px; }
+    .detail-content { padding: 20px 16px 60px; }
+  }
+  @media (max-width: 380px) {
+    .events-grid { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
-<body class="antialiased min-h-screen">
+<body>
 
-    <div class="bg-animated"></div>
-    <div class="orb-1"></div>
-    <div class="orb-2"></div>
+<div class="bg-orbs">
+  <span></span><span></span><span></span>
+</div>
 
-    <div class="max-w-md mx-auto min-h-screen relative p-4 flex flex-col">
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div class="screen" id="screen-login">
+  <div class="glass login-card">
+    <div class="login-logo">
+      <div class="icon">✝️</div>
+      <h1>Escala de Cultos</h1>
+      <p>Acesso restrito à equipe</p>
+    </div>
+    <div class="modal-fields">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+    </div>
+    <p class="login-error" id="login-error"></p>
+    <button class="btn-primary" id="btn-login">Entrar</button>
+  </div>
+</div>
 
-        <div id="view-home" class="view flex-1 flex flex-col pb-20 active">
-            <div class="flex justify-between items-start py-4 mb-6 relative">
-                <div>
-                    <h2 class="text-sm font-medium text-white/60 uppercase tracking-wider" id="current-month-label">Mês</h2>
-                    <h1 class="text-3xl font-bold">Agenda</h1>
-                </div>
-                
-                <div class="absolute top-4 right-0 flex gap-3 items-center">
-                    <button id="btn-login-small" onclick="navigateTo('view-login')" class="text-white/40 hover:text-white transition-colors duration-300 p-1">
-                        <i class="ph ph-user text-2xl"></i>
-                    </button>
-                    
-                    <button id="btn-add-event" onclick="navigateTo('view-add')" class="glass-btn-secondary w-9 h-9 flex items-center justify-center rounded-full hidden">
-                        <i class="ph ph-plus text-lg"></i>
-                    </button>
-                    <button id="btn-logout" onclick="logout()" class="text-white/40 hover:text-red-400 transition-colors duration-300 p-1 hidden">
-                        <i class="ph ph-sign-out text-2xl"></i>
-                    </button>
-                </div>
-            </div>
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="screen hidden" id="screen-main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">✝️</div>
+      <h2>Escala de Cultos</h2>
+    </div>
+    <div class="topbar-right">
+      <div class="avatar" id="user-avatar">?</div>
+      <button class="btn-logout" id="btn-logout">Sair</button>
+    </div>
+  </div>
 
-            <div class="glass-panel p-6 mb-6">
-                <div class="calendar-grid text-white/50 text-xs mb-4 font-medium">
-                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
-                </div>
-                <div id="calendar-days" class="calendar-grid">
-                    </div>
-            </div>
-            
-            <div class="text-center mt-4">
-                <p class="text-white/40 text-xs">Toque nas datas marcadas com um ponto para ver a escala.</p>
-            </div>
+  <div class="content">
+    <!-- Calendário -->
+    <div class="glass calendar-wrap">
+      <div class="cal-header">
+        <span class="cal-month-title" id="cal-month-label"></span>
+        <div class="cal-nav">
+          <button id="cal-prev">‹</button>
+          <button id="cal-next">›</button>
         </div>
-
-
-        <div id="view-login" class="view flex-1 flex flex-col justify-center">
-            <button onclick="navigateTo('view-home')" class="text-white/60 text-sm absolute top-8 left-4 flex items-center gap-1 hover:text-white transition">
-                <i class="ph ph-arrow-left"></i> Voltar
-            </button>
-            <div class="glass-panel p-8 text-center mt-10">
-                <i class="ph ph-lock-key text-5xl mb-4 text-white/80"></i>
-                <h1 class="text-2xl font-semibold mb-1">Acesso Restrito</h1>
-                <p class="text-white/50 text-sm mb-8">Faça login para gerenciar e salvar novas escalas</p>
-                
-                <form id="login-form" class="space-y-4">
-                    <div>
-                        <input type="email" id="email" placeholder="E-mail" class="glass-input w-full p-4" required>
-                    </div>
-                    <div>
-                        <input type="password" id="password" placeholder="Senha" class="glass-input w-full p-4" required>
-                    </div>
-                    <button type="submit" class="glass-btn w-full p-4 mt-2 shadow-lg">Entrar no Sistema</button>
-                </form>
-            </div>
-        </div>
-
-
-        <div id="view-detail" class="view flex-1 flex flex-col">
-            <div class="flex items-center py-4 mb-4">
-                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4 rounded-full">
-                    <i class="ph ph-caret-left text-xl"></i>
-                </button>
-                <div class="flex-1">
-                    <h2 class="text-sm text-white/60 font-medium" id="detail-date">00/00/0000</h2>
-                    <h1 class="text-2xl font-bold" id="detail-title">Culto</h1>
-                </div>
-                <button id="btn-delete-event" onclick="deleteCurrentEvent()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center text-red-400 hidden rounded-full">
-                    <i class="ph ph-trash text-xl"></i>
-                </button>
-            </div>
-
-            <div class="glass-panel p-2 space-y-1" id="detail-roster">
-                </div>
-        </div>
-
-
-        <div id="view-add" class="view flex-1 flex flex-col pb-8">
-            <div class="flex items-center py-4 mb-4">
-                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4 rounded-full">
-                    <i class="ph ph-x text-xl"></i>
-                </button>
-                <h1 class="text-2xl font-bold">Nova Escala</h1>
-            </div>
-
-            <form id="add-event-form" class="space-y-4 glass-panel p-5">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-white/60 mb-1 ml-1">Data</label>
-                        <input type="date" id="add-date" class="glass-input w-full p-3 text-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-white/60 mb-1 ml-1">Título do Culto</label>
-                        <input type="text" id="add-title" placeholder="Ex: Domingo Manhã" class="glass-input w-full p-3 text-sm" required>
-                    </div>
-                </div>
-
-                <div class="space-y-3 mt-4">
-                    <h3 class="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Equipe da Escala</h3>
-                    
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-microphone-stage text-xl"></i></div>
-                        <input type="text" id="add-dirigente" placeholder="Dirigente" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-book-open-text text-xl"></i></div>
-                        <input type="text" id="add-pregador" placeholder="Pregador(a)" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-music-notes text-xl"></i></div>
-                        <input type="text" id="add-louvor" placeholder="Louvor" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-handshake text-xl"></i></div>
-                        <input type="text" id="add-acolhimento" placeholder="Acolhimento" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-video-camera text-xl"></i></div>
-                        <input type="text" id="add-projecao" placeholder="Projeção / Live" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-megaphone text-xl"></i></div>
-                        <input type="text" id="add-marketing" placeholder="Marketing" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-baby text-xl"></i></div>
-                        <input type="text" id="add-kids" placeholder="Kids" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-sliders text-xl"></i></div>
-                        <input type="text" id="add-tecnica" placeholder="Técnica" class="glass-input flex-1 p-3 text-sm">
-                    </div>
-                </div>
-
-                <button type="submit" class="glass-btn w-full p-4 mt-6 shadow-lg" id="btn-save">Salvar Escala</button>
-            </form>
-        </div>
-
+      </div>
+      <div class="cal-grid">
+        <div class="cal-days-header" id="cal-days-header"></div>
+        <div class="cal-cells" id="cal-cells"></div>
+      </div>
     </div>
 
-    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full shadow-2xl font-medium text-sm transition-all duration-300 opacity-0 pointer-events-none z-50">
-        Mensagem
+    <!-- Eventos da semana -->
+    <div>
+      <div class="section-title" id="week-title">Esta semana</div>
+      <div class="section-sub" id="week-sub"></div>
+      <div class="events-grid" id="events-grid">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab" id="btn-add-event" title="Novo culto">+</button>
+</div>
+
+<!-- ═══════════════ DETAIL ═══════════════ -->
+<div class="screen hidden" id="screen-detail">
+  <div class="detail-topbar">
+    <button class="btn-back" id="btn-back">‹ Voltar</button>
+    <span class="detail-topbar-title" id="detail-topbar-title"></span>
+  </div>
+  <div class="detail-content">
+    <div class="glass detail-hero" id="detail-hero"></div>
+    <div class="escala-section glass" style="padding:24px;" id="detail-escala">
+      <div class="loading-center"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL ADD/EDIT ═══════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Novo Culto</h3>
+      <button class="btn-close" id="btn-modal-close">✕</button>
+    </div>
+    <div class="modal-fields">
+      <div class="field"><label>Título do Culto</label><input id="f-titulo" placeholder="Ex: Culto Domingo Manhã" /></div>
+      <div class="modal-row">
+        <div class="field"><label>Data</label><input type="date" id="f-data" /></div>
+        <div class="field"><label>Horário</label><input type="time" id="f-horario" value="09:00" /></div>
+      </div>
+      <div class="modal-row">
+        <div class="field">
+          <label>Tipo</label>
+          <select id="f-tipo">
+            <option value="culto">Culto Regular</option>
+            <option value="especial">Culto Especial</option>
+            <option value="conferencia">Conferência</option>
+            <option value="oracao">Culto de Oração</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cor</label>
+          <select id="f-cor">
+            <option value="#007AFF">Azul</option>
+            <option value="#5856D6">Roxo</option>
+            <option value="#34C759">Verde</option>
+            <option value="#FF9500">Laranja</option>
+            <option value="#FF3B30">Vermelho</option>
+            <option value="#FF2D96">Rosa</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Descrição</label><input id="f-descricao" placeholder="Descrição opcional" /></div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://qihnrltjjpfirsgtfvtr.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpaG5ybHRqanBmaXJzZ3RmdnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDI2NDMsImV4cCI6MjA4ODIxODY0M30.dS5raMLod4ktt33R_u3EEqZfYM25L1Vp-RBy0eaaj5k';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <hr class="modal-divider" />
+    <div style="font-size:15px;font-weight:700;letter-spacing:-.2px;">Equipe de Ministério</div>
 
-        let currentUser = null;
-        let allEvents = [];
-        let selectedEventId = null;
-        const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    <div class="escala-form" id="escala-form">
+      <!-- gerado via JS -->
+    </div>
 
-        async function init() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            updateAuthUI(session);
+    <button class="btn-primary" id="btn-save-event">Salvar Culto</button>
+  </div>
+</div>
 
-            supabaseClient.auth.onAuthStateChange((_event, session) => {
-                updateAuthUI(session);
-            });
-            
-            // Força a tela de calendário como primeira tela sempre
-            navigateTo('view-home');
-            loadDashboard();
-        }
+<!-- ═══════════════ SCRIPT ═══════════════ -->
+<script>
+const SUPABASE_URL = 'https://qihnrltjjpfirsgtfvtr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpaG5ybHRqanBmaXJzZ3RmdnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDI2NDMsImV4cCI6MjA4ODIxODY0M30.dS5raMLod4ktt33R_u3EEqZfYM25L1Vp-RBy0eaaj5k';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function updateAuthUI(session) {
-            if (session) {
-                currentUser = session.user;
-                document.getElementById('btn-add-event').classList.remove('hidden');
-                document.getElementById('btn-logout').classList.remove('hidden');
-                document.getElementById('btn-login-small').classList.add('hidden');
-            } else {
-                currentUser = null;
-                document.getElementById('btn-add-event').classList.add('hidden');
-                document.getElementById('btn-logout').classList.add('hidden');
-                document.getElementById('btn-login-small').classList.remove('hidden');
-            }
-        }
+// ─── FUNCOES CONFIG ───
+const FUNCOES = [
+  { key: 'dirigente',     label: 'Dirigente',      icon: '🎤', cls: 'fn-dirigente' },
+  { key: 'pregador',      label: 'Pregador(a)',     icon: '📖', cls: 'fn-pregador' },
+  { key: 'louvor',        label: 'Louvor',          icon: '🎵', cls: 'fn-louvor' },
+  { key: 'acolhimento',   label: 'Acolhimento',     icon: '🤝', cls: 'fn-acolhimento' },
+  { key: 'projecao_live', label: 'Projeção / Live', icon: '📡', cls: 'fn-projecao_live' },
+  { key: 'marketing',     label: 'Marketing',       icon: '📸', cls: 'fn-marketing' },
+  { key: 'kids',          label: 'Kids',            icon: '🧒', cls: 'fn-kids' },
+  { key: 'tecnica',       label: 'Técnica',         icon: '🎛️', cls: 'fn-tecnica' },
+];
 
-        function navigateTo(viewId) {
-            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            window.scrollTo(0,0);
-        }
+// ─── STATE ───
+let currentMonth = new Date(); currentMonth.setDate(1);
+let allCultos    = [];
+let currentCulto = null;
+let editingId    = null;
 
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.style.backgroundColor = isError ? '#ff3b30' : '#ffffff';
-            toast.style.color = isError ? '#ffffff' : '#000000';
-            toast.style.opacity = '1';
-            toast.style.transform = 'translate(-50%, 20px)';
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translate(-50%, 0)';
-            }, 3000);
-        }
+// ─── UTILS ───
+const $ = id => document.getElementById(id);
+const show = id => $(`screen-${id}`).classList.remove('hidden');
+const hide = id => $(`screen-${id}`).classList.add('hidden');
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = e.target.querySelector('button');
-            btn.textContent = 'Autenticando...';
+function fmtDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'numeric', month:'short' });
+}
+function fmtTime(t) {
+  return t ? t.slice(0,5) : '';
+}
+function getWeekRange(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const start = new Date(d); start.setDate(d.getDate() - day);
+  const end   = new Date(d); end.setDate(d.getDate() + (6 - day));
+  return { start, end };
+}
+function toYMD(date) {
+  return date.toISOString().slice(0,10);
+}
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                showToast('Erro no login. Verifique as credenciais.', true);
-                btn.textContent = 'Entrar no Sistema';
-            } else {
-                showToast('Login efetuado! Agora você pode gerenciar escalas.');
-                btn.textContent = 'Entrar no Sistema';
-                document.getElementById('login-form').reset();
-                navigateTo('view-home');
-                loadDashboard();
-            }
-        });
+// ─── AUTH ───
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) enterApp(session.user);
+  else showLogin();
+}
 
-        async function logout() {
-            await supabaseClient.auth.signOut();
-            navigateTo('view-home');
-            showToast('Você saiu com sucesso.');
-        }
+function showLogin() {
+  show('login'); hide('main'); hide('detail');
+}
+function enterApp(user) {
+  const initials = (user.email || 'U').slice(0,2).toUpperCase();
+  $('user-avatar').textContent = initials;
+  hide('login'); show('main'); hide('detail');
+  loadCultos();
+}
 
-        async function loadDashboard() {
-            const today = new Date();
-            document.getElementById('current-month-label').textContent = `${months[today.getMonth()]} ${today.getFullYear()}`;
-            await fetchEvents();
-            renderCalendar(today);
-        }
+$('btn-login').addEventListener('click', async () => {
+  const email = $('login-email').value.trim();
+  const pass  = $('login-pass').value;
+  $('login-error').textContent = '';
+  if (!email || !pass) { $('login-error').textContent = 'Preencha e-mail e senha.'; return; }
+  $('btn-login').disabled = true;
+  $('btn-login').innerHTML = '<div class="spinner"></div>';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  $('btn-login').disabled = false;
+  $('btn-login').textContent = 'Entrar';
+  if (error) { $('login-error').textContent = 'E-mail ou senha incorretos.'; return; }
+  enterApp(data.user);
+});
 
-        async function fetchEvents() {
-            const { data, error } = await supabaseClient
-                .from('escala_cultos')
-                .select('*')
-                .order('data_culto', { ascending: true });
+$('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-login').click(); });
 
-            if (error) {
-                console.error("Erro ao buscar eventos:", error);
-            } else {
-                allEvents = data || [];
-            }
-        }
+$('btn-logout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  allCultos = [];
+  showLogin();
+});
 
-        function renderCalendar(date) {
-            const grid = document.getElementById('calendar-days');
-            grid.innerHTML = '';
-            
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const today = new Date();
+// ─── LOAD CULTOS ───
+async function loadCultos() {
+  const { data, error } = await sb.from('cultos').select('*, escalas(*)').order('data').order('horario');
+  if (error) { console.error(error); return; }
+  allCultos = data || [];
+  renderCalendar();
+  renderWeekEvents(new Date());
+}
 
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
+// ─── CALENDAR ───
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DAYS_PT   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
-            for (let i = 0; i < firstDay; i++) {
-                grid.appendChild(document.createElement('div'));
-            }
+function renderCalendar() {
+  $('cal-month-label').textContent = `${MONTHS_PT[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day';
-                dayDiv.textContent = i;
+  // header
+  $('cal-days-header').innerHTML = DAYS_PT.map(d => `<div class="cal-day-label">${d}</div>`).join('');
 
-                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+  const year  = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = toYMD(new Date());
 
-                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                    dayDiv.classList.add('today');
-                }
+  // event map
+  const eventMap = {};
+  allCultos.forEach(c => { if (!eventMap[c.data]) eventMap[c.data] = []; eventMap[c.data].push(c); });
 
-                const eventForDay = allEvents.find(e => e.data_culto === dateString);
-                if (eventForDay) {
-                    dayDiv.classList.add('has-event', 'cursor-pointer', 'hover:bg-white/10', 'transition');
-                    dayDiv.onclick = () => openEventDetail(eventForDay);
-                }
+  let cells = '';
+  // prev month padding
+  const prevDays = new Date(year, month, 0).getDate();
+  for (let i = firstDay - 1; i >= 0; i--) {
+    cells += `<div class="cal-cell other-month"><span class="cal-num">${prevDays - i}</span></div>`;
+  }
+  // current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === today;
+    const events  = eventMap[dateStr] || [];
+    const hasEvt  = events.length > 0;
+    const dots    = events.slice(0,3).map(e => `<div class="cal-dot" style="background:${e.cor||'#007AFF'}"></div>`).join('');
+    cells += `<div class="cal-cell ${isToday?'today':''} ${hasEvt?'has-event':''}" ${hasEvt?`onclick="onCalDayClick('${dateStr}')"`:''}>`+
+             `<span class="cal-num">${d}</span>`+
+             (dots ? `<div class="cal-dots">${dots}</div>` : '')+
+             `</div>`;
+  }
+  // next month
+  const totalCells = firstDay + daysInMonth;
+  const remaining  = (7 - (totalCells % 7)) % 7;
+  for (let d = 1; d <= remaining; d++) {
+    cells += `<div class="cal-cell other-month"><span class="cal-num">${d}</span></div>`;
+  }
+  $('cal-cells').innerHTML = cells;
+}
 
-                grid.appendChild(dayDiv);
-            }
-        }
+function onCalDayClick(dateStr) {
+  const events = allCultos.filter(c => c.data === dateStr);
+  if (events.length === 1) { openDetail(events[0]); return; }
+  // múltiplos: mostrar na semana desse dia
+  renderWeekEvents(new Date(dateStr + 'T00:00:00'));
+  $('screen-main').scrollTo({ top: $('screen-main').scrollHeight, behavior: 'smooth' });
+}
 
-        function openEventDetail(event) {
-            selectedEventId = event.id;
-            const [y, m, d] = event.data_culto.split('-');
-            document.getElementById('detail-date').textContent = `${d}/${m}/${y}`;
-            document.getElementById('detail-title').textContent = event.titulo;
+$('cal-prev').addEventListener('click', () => {
+  currentMonth.setMonth(currentMonth.getMonth() - 1);
+  renderCalendar();
+});
+$('cal-next').addEventListener('click', () => {
+  currentMonth.setMonth(currentMonth.getMonth() + 1);
+  renderCalendar();
+});
 
-            if (currentUser) {
-                document.getElementById('btn-delete-event').classList.remove('hidden');
-            } else {
-                document.getElementById('btn-delete-event').classList.add('hidden');
-            }
+// ─── WEEK EVENTS ───
+function renderWeekEvents(refDate) {
+  const { start, end } = getWeekRange(refDate);
+  const startStr = toYMD(start);
+  const endStr   = toYMD(end);
 
-            const rosterContainer = document.getElementById('detail-roster');
-            rosterContainer.innerHTML = '';
+  $('week-title').textContent = 'Esta semana';
+  $('week-sub').textContent   = `${fmtDate(startStr)} – ${fmtDate(endStr)}`;
 
-            const roles = [
-                { key: 'dirigente', label: 'Dirigente', icon: 'ph-microphone-stage' },
-                { key: 'pregador', label: 'Pregador(a)', icon: 'ph-book-open-text' },
-                { key: 'louvor', label: 'Louvor', icon: 'ph-music-notes' },
-                { key: 'acolhimento', label: 'Acolhimento', icon: 'ph-handshake' },
-                { key: 'projecao_live', label: 'Projeção/Live', icon: 'ph-video-camera' },
-                { key: 'marketing', label: 'Marketing', icon: 'ph-megaphone' },
-                { key: 'kids', label: 'Kids', icon: 'ph-baby' },
-                { key: 'tecnica', label: 'Técnica', icon: 'ph-sliders' }
-            ];
+  const events = allCultos.filter(c => c.data >= startStr && c.data <= endStr).slice(0, 4);
+  const grid = $('events-grid');
 
-            roles.forEach((role, index) => {
-                const value = event[role.key] || '<span class="text-white/30 italic">A definir</span>';
-                const item = document.createElement('div');
-                item.className = `flex items-center p-3 ${index !== roles.length -1 ? 'border-b border-white/5' : ''}`;
-                item.innerHTML = `
-                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-3 border border-white/5">
-                        <i class="ph ${role.icon} text-lg text-white"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-xs text-white/50 uppercase tracking-wide font-medium">${role.label}</p>
-                        <p class="font-medium text-[15px] mt-0.5">${value}</p>
-                    </div>
-                `;
-                rosterContainer.appendChild(item);
-            });
+  if (!events.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📅</div><p>Nenhum culto esta semana</p></div>`;
+    return;
+  }
 
-            navigateTo('view-detail');
-        }
+  grid.innerHTML = events.map((c, i) => {
+    const cor = c.cor || '#007AFF';
+    return `<div class="glass event-card" style="--accent-color:${cor};animation-delay:${i*0.07}s" onclick="openDetail(allCultos.find(x=>x.id==='${c.id}'))">
+      <div class="event-date-badge"><div class="dot"></div>${fmtDate(c.data)}</div>
+      <h3>${c.titulo}</h3>
+      <p>${c.descricao || c.tipo}</p>
+      <div class="event-time">${fmtTime(c.horario)}</div>
+    </div>`;
+  }).join('');
+}
 
-        async function deleteCurrentEvent() {
-            if(!confirm('Tem certeza que deseja excluir esta escala?')) return;
+// ─── DETAIL ───
+function openDetail(culto) {
+  currentCulto = culto;
+  const cor = culto.cor || '#007AFF';
 
-            const { error } = await supabaseClient
-                .from('escala_cultos')
-                .delete()
-                .eq('id', selectedEventId);
+  $('detail-topbar-title').textContent = culto.titulo;
+  document.querySelector('#screen-detail .detail-content').style.setProperty('--detail-color', cor);
 
-            if (error) {
-                showToast('Erro ao excluir', true);
-            } else {
-                showToast('Escala excluída com sucesso!');
-                loadDashboard();
-                navigateTo('view-home');
-            }
-        }
+  $('detail-hero').style.setProperty('--detail-color', cor);
+  $('detail-hero').innerHTML = `
+    <div class="detail-hero-tag">✝️ ${culto.tipo}</div>
+    <h1>${culto.titulo}</h1>
+    ${culto.descricao ? `<p style="color:var(--text2);font-size:14px;margin-top:6px">${culto.descricao}</p>` : ''}
+    <div class="detail-hero-meta">
+      <div class="detail-meta-item"><span class="detail-meta-icon">📅</span>${fmtDate(culto.data)}</div>
+      <div class="detail-meta-item"><span class="detail-meta-icon">🕐</span>${fmtTime(culto.horario)}</div>
+    </div>`;
 
-        document.getElementById('add-event-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-save');
-            btn.textContent = 'Salvando...';
+  renderEscala(culto);
 
-            const newEvent = {
-                data_culto: document.getElementById('add-date').value,
-                titulo: document.getElementById('add-title').value,
-                dirigente: document.getElementById('add-dirigente').value,
-                pregador: document.getElementById('add-pregador').value,
-                louvor: document.getElementById('add-louvor').value,
-                acolhimento: document.getElementById('add-acolhimento').value,
-                projecao_live: document.getElementById('add-projecao').value,
-                marketing: document.getElementById('add-marketing').value,
-                kids: document.getElementById('add-kids').value,
-                tecnica: document.getElementById('add-tecnica').value,
-            };
+  hide('login'); hide('main'); show('detail');
+  $('screen-detail').scrollTo({ top: 0, behavior: 'instant' });
+}
 
-            const { data, error } = await supabaseClient.from('escala_cultos').insert([newEvent]);
+function renderEscala(culto) {
+  const escalas = culto.escalas || [];
+  const escalaMap = {};
+  escalas.forEach(e => { escalaMap[e.funcao] = e.pessoa_nome; });
 
-            if (error) {
-                console.error(error);
-                showToast('Erro ao salvar escala', true);
-                btn.textContent = 'Salvar Escala';
-            } else {
-                showToast('Escala criada com sucesso!');
-                document.getElementById('add-event-form').reset();
-                btn.textContent = 'Salvar Escala';
-                await loadDashboard();
-                navigateTo('view-home');
-            }
-        });
+  const items = FUNCOES.map(f => {
+    const nome = escalaMap[f.key];
+    return `<div class="glass escala-item" style="border-radius:var(--r-sm)">
+      <div class="escala-icon ${f.cls}">${f.icon}</div>
+      <div class="escala-info">
+        <div class="escala-funcao">${f.label}</div>
+        ${nome ? `<div class="escala-nome">${nome}</div>` : `<div class="escala-empty">A definir</div>`}
+      </div>
+    </div>`;
+  }).join('');
 
-        window.onload = init;
-    </script>
+  $('detail-escala').innerHTML = `<h2>Equipe de Ministério</h2><div class="escala-grid">${items}</div>`;
+
+  // botão editar
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn-primary';
+  editBtn.style.marginTop = '8px';
+  editBtn.textContent = 'Editar Escala';
+  editBtn.onclick = () => openModal(culto);
+  $('detail-escala').appendChild(editBtn);
+}
+
+$('btn-back').addEventListener('click', () => {
+  hide('detail'); show('main');
+});
+
+// ─── MODAL ADD/EDIT ───
+function buildEscalaForm(escalaMap = {}) {
+  $('escala-form').innerHTML = FUNCOES.map(f => `
+    <div class="escala-form-item">
+      <div class="escala-form-label"><span class="ei">${f.icon}</span>${f.label}</div>
+      <input class="modal-fields" style="padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--glassBorder);border-radius:10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%"
+             id="ef-${f.key}" placeholder="Nome da pessoa" value="${escalaMap[f.key] || ''}" />
+    </div>`).join('');
+}
+
+function openModal(culto = null) {
+  editingId = culto ? culto.id : null;
+  $('modal-title').textContent = culto ? 'Editar Culto' : 'Novo Culto';
+  $('f-titulo').value    = culto?.titulo    || '';
+  $('f-data').value      = culto?.data      || toYMD(new Date());
+  $('f-horario').value   = culto?.horario?.slice(0,5) || '09:00';
+  $('f-tipo').value      = culto?.tipo      || 'culto';
+  $('f-cor').value       = culto?.cor       || '#007AFF';
+  $('f-descricao').value = culto?.descricao || '';
+
+  const escalaMap = {};
+  (culto?.escalas || []).forEach(e => { escalaMap[e.funcao] = e.pessoa_nome; });
+  buildEscalaForm(escalaMap);
+
+  $('modal-overlay').classList.add('open');
+}
+
+$('btn-add-event').addEventListener('click', () => openModal());
+$('btn-modal-close').addEventListener('click', () => $('modal-overlay').classList.remove('open'));
+$('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) $('modal-overlay').classList.remove('open'); });
+
+$('btn-save-event').addEventListener('click', async () => {
+  const titulo  = $('f-titulo').value.trim();
+  const data    = $('f-data').value;
+  const horario = $('f-horario').value;
+  const tipo    = $('f-tipo').value;
+  const cor     = $('f-cor').value;
+  const desc    = $('f-descricao').value.trim();
+
+  if (!titulo || !data) { alert('Preencha pelo menos título e data.'); return; }
+
+  $('btn-save-event').disabled = true;
+  $('btn-save-event').innerHTML = '<div class="spinner" style="margin:0 auto"></div>';
+
+  let cultoId = editingId;
+  if (editingId) {
+    await sb.from('cultos').update({ titulo, data, horario, tipo, cor, descricao: desc, updated_at: new Date() }).eq('id', editingId);
+    await sb.from('escalas').delete().eq('culto_id', editingId);
+  } else {
+    const { data: row, error } = await sb.from('cultos').insert({ titulo, data, horario, tipo, cor, descricao: desc }).select().single();
+    if (error) { alert('Erro ao salvar.'); $('btn-save-event').disabled = false; $('btn-save-event').textContent = 'Salvar Culto'; return; }
+    cultoId = row.id;
+  }
+
+  const escalasInsert = FUNCOES
+    .map(f => ({ culto_id: cultoId, funcao: f.key, pessoa_nome: document.getElementById(`ef-${f.key}`)?.value.trim() || '' }))
+    .filter(e => e.pessoa_nome);
+
+  if (escalasInsert.length) await sb.from('escalas').insert(escalasInsert);
+
+  $('modal-overlay').classList.remove('open');
+  $('btn-save-event').disabled = false;
+  $('btn-save-event').textContent = 'Salvar Culto';
+
+  await loadCultos();
+
+  // Se estava na tela de detalhe, atualiza
+  if (editingId && currentCulto) {
+    const updated = allCultos.find(c => c.id === editingId);
+    if (updated) openDetail(updated);
+  }
+});
+
+// ─── INIT ───
+window.openDetail = openDetail; // expor ao inline onclick
+checkAuth();
+</script>
 </body>
 </html>
