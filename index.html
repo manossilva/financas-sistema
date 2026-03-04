@@ -2,765 +2,671 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Pessoais - Pro V2 (Conectado DB)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Escala Church - Apple UI</title>
     
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Phosphor Icons for Apple-like sleek icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --secondary: #64748b;
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bitcoin: #f7931a;
-            --text-main: #0f172a;
-            --text-muted: #94a3b8;
+        /* Apple-like Typography */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; padding: 20px; line-height: 1.5; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        /* Animated Gradient Background for Glassmorphism contrast */
+        .bg-animated {
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #4b0082);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+        }
 
-        /* Login Styles */
-        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
-        .login-logo { color: var(--primary); margin-bottom: 20px; }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-        /* Header e Controles */
-        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px; }
-        .month-selector { background: white; border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; font-weight: 600; color: var(--text-main); cursor: pointer; }
+        /* Abstract glowing orbs for extra Apple Glass effect */
+        .orb-1, .orb-2 {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+        .orb-1 {
+            width: 300px; height: 300px;
+            background: #ff2a5f;
+            top: -50px; left: -50px;
+        }
+        .orb-2 {
+            width: 400px; height: 400px;
+            background: #00d2ff;
+            bottom: -100px; right: -100px;
+        }
 
-        /* Tabs */
-        .tabs { display: flex; gap: 8px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .tab { padding: 10px 20px; background: transparent; border: none; border-radius: 6px; color: var(--secondary); cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        .tab:hover { color: var(--primary); background-color: #eff6ff; }
-        .tab.active { color: var(--primary); background-color: #eff6ff; font-weight: 600; }
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+        }
 
-        /* Cards */
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .card h2 { font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+        }
 
-        /* Dashboard Stats */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; }
-        .stat-label { font-size: 13px; color: var(--secondary); margin-bottom: 8px; }
-        .stat-value { font-size: 24px; font-weight: 700; color: var(--text-main); }
-        .stat-value.positive { color: var(--success); }
-        .stat-value.negative { color: var(--danger); }
-        .stat-value.warning { color: var(--warning); }
-        .stat-value.bitcoin { color: var(--bitcoin); }
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+            font-weight: 600;
+            border-radius: 14px;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .glass-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
 
-        /* Category Bars */
-        .category-bar-item { margin-bottom: 15px; }
-        .category-header { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
-        .category-progress-bg { background: #f1f5f9; height: 8px; border-radius: 4px; overflow: hidden; }
-        .category-progress-fill { height: 100%; border-radius: 4px; background: var(--primary); }
+        .glass-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 14px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .glass-btn-secondary:active {
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.2);
+        }
 
-        /* Forms */
-        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--secondary); }
-        input, select, textarea { width: 100%; padding: 10px 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 14px; transition: border-color 0.2s; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        /* Smooth View Transitions */
+        .view {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+        .view.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        /* Buttons */
-        .btn-primary { padding: 12px 24px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
-        .btn-primary:hover { background-color: var(--primary-dark); }
-        .btn-ghost { background: transparent; color: var(--secondary); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 10px; width: 100%; }
-        .btn-ghost:hover { background: #f8fafc; }
-        .btn-icon { background: transparent; border: none; cursor: pointer; color: var(--text-muted); padding: 5px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-        .btn-icon:hover.delete { background: #fee2e2; color: var(--danger); }
-        .btn-icon:hover.edit { background: #eff6ff; color: var(--primary); }
-        .btn-icon.check { color: #cbd5e1; }
-        .btn-icon.check.paid { color: #10b981; background: #d1fae5; }
+        /* Calendar grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            text-align: center;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        .calendar-day.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 4px;
+            height: 4px;
+            background-color: #ffffff; /* White dot */
+            border-radius: 50%;
+        }
+        .calendar-day.today {
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
 
-        /* List Items */
-        .transaction-item { background: var(--bg-body); padding: 16px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: border 0.2s; }
-        .transaction-item:hover { border-color: var(--border); }
-        .transaction-info { flex: 1; }
-        .transaction-description { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--text-main); }
-        .transaction-meta { font-size: 12px; color: var(--secondary); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;}
-        .transaction-amount { font-weight: 600; font-size: 15px; white-space: nowrap; }
-
-        /* Badges */
-        .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .badge-pf { background: #e0f2fe; color: #0369a1; }
-        .badge-pj { background: #fef3c7; color: #b45309; }
-        .badge-cat { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-        .badge-paid { background: #d1fae5; color: #059669; }
-
-        /* Icons */
-        .icon { width: 18px; height: 18px; stroke-width: 2; }
-        
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        
-        .login-link { color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 600; margin-top: 15px; display: inline-block; cursor: pointer; }
-        .login-link:hover { text-decoration: underline; }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="antialiased min-h-screen">
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        const { createClient } = supabase;
+    <!-- App Container -->
+    <div class="max-w-md mx-auto min-h-screen relative p-4 flex flex-col">
 
-        // --- CONFIGURAÇÃO SUPABASE ---
-        const SUPABASE_URL = 'https://hcdsbawdwzmlujxnxymf.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZHNiYXdkd3ptbHVqeG54eW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTgzMjksImV4cCI6MjA4NTI3NDMyOX0.wqZvGYlLeU-CIcikwKFauTCwmSH1VvJuVpccca3wpaU';
-        
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // --- Ícones SVG ---
-        const IconDashboard = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>;
-        const IconWallet = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>;
-        const IconTrendingDown = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>;
-        const IconFileText = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>;
-        const IconCreditCard = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>;
-        const IconEdit = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
-        const IconTrash = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
-        const IconPlus = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-        const IconRefresh = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>;
-        const IconLogOut = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
-        const IconCheck = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-        const IconHistory = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
-        const IconSearch = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-        const IconBitcoin = () => <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.302 2.767-8.704 2.819-2.219 2.112-6.246-1.58-6.845"></path><path d="M8.286 18.497 8.795 4.88"></path><path d="M14.286 1.984 13.914 18.99"></path><path d="M5.5 19H14"></path><path d="M5.5 5H14"></path></svg>;
-
-        const CATEGORIAS_GASTOS = [
-            "Alimentação", "Mercado", "Moradia", "Transporte", 
-            "Saúde", "Lazer", "Educação", "Assinaturas", 
-            "Farmácia", "Casa", "Pets", "Roupas", 
-            "Viagem", "Presentes", "Impostos", "Investimento", 
-            "Escritório", "Marketing", "Outros"
-        ];
-
-         const FORMA_DE_PAGAMENTO = [
-            "Crédito", "Débito", "Dinheiro", "PIX"
-        ];
-
-        function App() {
-            // Estados Globais de Sessão
-            const [session, setSession] = useState(null); 
-            const [loading, setLoading] = useState(false);
-
-            // Inputs de Login
-            const [loginEmail, setLoginEmail] = useState('');
-            const [loginPass, setLoginPass] = useState('');
-
-            // Estados de Dados
-            const [activeTab, setActiveTab] = useState('dashboard');
-            const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-            
-            const [receitas, setReceitas] = useState([]);
-            const [gastos, setGastos] = useState([]);
-            const [contasFixas, setContasFixas] = useState([]);
-            const [dividas, setDividas] = useState([]);
-            const [anotacoes, setAnotacoes] = useState([]);
-            
-            // Novos Estados (Reserva + Bitcoin)
-            const [reservaEmergencia, setReservaEmergencia] = useState(0);
-            const [reservaInput, setReservaInput] = useState('');
-            const [btcHoldings, setBtcHoldings] = useState(0); // Quantidade de BTC
-            const [btcPrice, setBtcPrice] = useState(0); // Preço atual do BTC
-
-            // Estados Histórico
-            const [historySearch, setHistorySearch] = useState('');
-
-            // Modal Dívida
-            const [modalDividaOpen, setModalDividaOpen] = useState(false);
-            const [dividaSelecionada, setDividaSelecionada] = useState(null);
-            const [valorPagamentoInput, setValorPagamentoInput] = useState('');
-            const [novaParcelaInput, setNovaParcelaInput] = useState('');
-
-            // Formulários
-            const [formReceita, setFormReceita] = useState({ descricao: '', valor: '', tipo: 'PF', data: new Date().toISOString().split('T')[0] });
-            const [formGasto, setFormGasto] = useState({ descricao: '', valor: '', categoria: 'Alimentação', forma_de_pagamento: 'Cartão', data: new Date().toISOString().split('T')[0] });
-            const [formContaFixa, setFormContaFixa] = useState({ descricao: '', valor: '', vencimento: '' });
-            const [formDivida, setFormDivida] = useState({ descricao: '', valorTotal: '', valorPago: '', parcelas: 1, parcelaAtual: 1 });
-            const [formAnotacao, setFormAnotacao] = useState('');
-
-            // --- AUTH E INICIALIZAÇÃO ---
-            useEffect(() => {
-                supabaseClient.auth.getSession().then(({ data: { session } }) => {
-                    setSession(session);
-                    if (session) {
-                        fetchData(session.user.id);
-                        fetchBtcPrice();
-                    }
-                });
-
-                const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-                    setSession(session);
-                    if (session) {
-                        fetchData(session.user.id);
-                        fetchBtcPrice();
-                    }
-                });
-
-                return () => subscription.unsubscribe();
-            }, []);
-
-            const fetchBtcPrice = async () => {
-                try {
-                    const res = await fetch('https://www.mercadobitcoin.net/api/BTC/ticker/');
-                    const data = await res.json();
-                    if(data && data.ticker) setBtcPrice(parseFloat(data.ticker.last));
-                } catch (e) { console.error("Erro BTC", e); }
-            };
-
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                try {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: loginEmail, password: loginPass });
-                    if (error) throw error;
-                } catch (error) { alert('Erro: ' + error.message); } finally { setLoading(false); }
-            };
-
-            const handleLogout = async () => {
-                await supabaseClient.auth.signOut();
-                setReceitas([]); setGastos([]); setContasFixas([]); setDividas([]); setAnotacoes([]);
-            };
-
-            const handleSolicitarLogin = (e) => {
-                e.preventDefault();
-                alert("Entre em contato com o administrador.");
-            };
-
-            // --- DATA FETCHING (SUPABASE) ---
-            const fetchData = async (uid) => {
-                setLoading(true);
-                try {
-                    const [{ data: rec }, { data: gas }, { data: fix }, { data: div }, { data: ano }, { data: sett }] = await Promise.all([
-                        supabaseClient.from('receitas').select('*').eq('user_id', uid),
-                        supabaseClient.from('gastos').select('*').eq('user_id', uid),
-                        supabaseClient.from('contasFixas').select('*').eq('user_id', uid),
-                        supabaseClient.from('dividas').select('*').eq('user_id', uid),
-                        supabaseClient.from('anotacoes').select('*').eq('user_id', uid),
-                        supabaseClient.from('settings').select('*').eq('user_id', uid)
-                    ]);
-
-                    if (rec) setReceitas(rec);
-                    if (gas) setGastos(gas);
-                    if (fix) setContasFixas(fix);
-                    if (div) setDividas(div);
-                    if (ano) setAnotacoes(ano);
-
-                    if (sett) {
-                        const s = Object.fromEntries(sett.map(r => [r.key, r.value]));
-                        if (s.reservaEmergencia) setReservaEmergencia(parseFloat(s.reservaEmergencia));
-                        if (s.btcHoldings) setBtcHoldings(parseFloat(s.btcHoldings));
-                    }
-                } catch (error) {
-                    console.error("Erro ao carregar dados:", error);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            // --- CRUD HELPERS ---
-            // Adicionar Item Genérico
-            const addRemoteItem = async (table, item, setter, currentList) => {
-                if (!session) return;
-                const newItem = { ...item, user_id: session.user.id };
-                const { data, error } = await supabaseClient.from(table).insert([newItem]).select();
-                if (error) alert('Erro ao salvar: ' + error.message);
-                else if (data) setter([...currentList, data[0]]);
-            };
-
-            // Deletar Item Genérico
-            const delItem = async (table, setter, list, id) => {
-                const { error } = await supabaseClient.from(table).delete().eq('id', id);
-                if (!error) setter(list.filter(i => i.id !== id));
-                else alert('Erro ao deletar: ' + error.message);
-            };
-
-            // Atualizar Settings (Upsert)
-            const updateSetting = async (key, value) => {
-                if (!session) return;
-                const { error } = await supabaseClient.from('settings').upsert(
-                    { user_id: session.user.id, key: key, value: String(value) },
-                    { onConflict: 'user_id, key' }
-                );
-                if (error) console.error("Erro saving setting", error);
-            };
-
-            // --- HANDLERS ESPECÍFICOS ---
-
-            const handleAddGasto = async (e) => { 
-                e.preventDefault(); 
-                await addRemoteItem('gastos', { ...formGasto, valor: parseFloat(formGasto.valor) }, setGastos, gastos);
-                setFormGasto({...formGasto, descricao: '', valor: ''}); 
-            };
-
-            const handleAddReceita = async (e) => { 
-                e.preventDefault(); 
-                await addRemoteItem('receitas', { ...formReceita, valor: parseFloat(formReceita.valor) }, setReceitas, receitas);
-                setFormReceita({...formReceita, descricao: '', valor: ''}); 
-            };
-
-            const adicionarAnotacao = async (e) => { 
-                e.preventDefault();
-                await addRemoteItem('anotacoes', { conteudo: formAnotacao, data: new Date().toISOString() }, setAnotacoes, anotacoes);
-                setFormAnotacao('');
-            };
-
-            const adicionarContaFixa = async (e) => {
-                e.preventDefault();
-                await addRemoteItem('contasFixas', { ...formContaFixa, valor: parseFloat(formContaFixa.valor) }, setContasFixas, contasFixas);
-                setFormContaFixa({...formContaFixa, descricao: '', valor: ''});
-            };
-
-            const adicionarDivida = async (e) => {
-                e.preventDefault();
-                await addRemoteItem('dividas', { 
-                    descricao: formDivida.descricao,
-                    valor_total: parseFloat(formDivida.valorTotal), 
-                    valor_pago: 0,
-                    parcelas: parseInt(formDivida.parcelas),
-                    parcela_atual: 1
-                }, setDividas, dividas);
-                setFormDivida({...formDivida, descricao: '', valorTotal: '', parcelas: 1});
-            };
-
-            // Toggle Conta Paga (Update DB)
-            const toggleContaFixaPaga = async (conta) => {
-                const pagamentos = conta.pagamentos || [];
-                const jaPago = pagamentos.includes(currentMonth);
-                const novosPagamentos = jaPago 
-                    ? pagamentos.filter(mes => mes !== currentMonth) 
-                    : [...pagamentos, currentMonth];
-
-                // Optimistic UI Update
-                setContasFixas(contasFixas.map(c => c.id === conta.id ? { ...c, pagamentos: novosPagamentos } : c));
+        <!-- ============================================== -->
+        <!-- VIEW: LOGIN                                    -->
+        <!-- ============================================== -->
+        <div id="view-login" class="view flex-1 flex flex-col justify-center">
+            <button onclick="navigateTo('view-home')" class="text-white/60 text-sm absolute top-8 left-4 flex items-center gap-1 hover:text-white transition">
+                <i class="ph ph-arrow-left"></i> Voltar
+            </button>
+            <div class="glass-panel p-8 text-center mt-10">
+                <i class="ph ph-church text-5xl mb-4 text-white/80"></i>
+                <h1 class="text-2xl font-semibold mb-1">Escala Church</h1>
+                <p class="text-white/50 text-sm mb-8">Faça login para gerenciar as escalas</p>
                 
-                const { error } = await supabaseClient.from('contasFixas').update({ pagamentos: novosPagamentos }).eq('id', conta.id);
-                if(error) alert("Erro ao atualizar conta");
-            };
-
-            // Atualizar Dívida (Update DB)
-            const atualizarDivida = async () => {
-                if(!dividaSelecionada) return;
-                const extra = parseFloat(valorPagamentoInput) || 0;
-                const parc = parseInt(novaParcelaInput) || dividaSelecionada.parcela_atual;
-                const novoPago = Math.min(parseFloat(dividaSelecionada.valor_total), (parseFloat(dividaSelecionada.valor_pago) || 0) + extra);
-
-                const updates = { valor_pago: novoPago, parcela_atual: parc };
-
-                setDividas(dividas.map(d => d.id === dividaSelecionada.id ? { ...d, ...updates } : d));
-                
-                await supabaseClient.from('dividas').update(updates).eq('id', dividaSelecionada.id);
-                setModalDividaOpen(false);
-                setValorPagamentoInput('');
-            };
-
-            // Atualizar Reserva (Settings)
-            const atualizarReserva = (e) => {
-                e.preventDefault();
-                const val = parseFloat(reservaInput);
-                if (!isNaN(val)) {
-                    setReservaEmergencia(val);
-                    updateSetting('reservaEmergencia', val);
-                    setReservaInput('');
-                }
-            };
-            
-            // Atualizar Bitcoin (Settings)
-            const saveBtcHoldings = () => {
-                 updateSetting('btcHoldings', btcHoldings);
-                 alert('Saldo BTC salvo!');
-            };
-
-
-            // --- CÁLCULOS & FORMATADORES ---
-            const filterByMonth = (items) => items.filter(item => (item.data ? item.data.startsWith(currentMonth) : true));
-            const receitasMes = filterByMonth(receitas);
-            const gastosMes = filterByMonth(gastos);
-            
-            const totalReceitas = receitasMes.reduce((acc, r) => acc + (parseFloat(r.valor) || 0), 0);
-            const totalGastos = gastosMes.reduce((acc, g) => acc + (parseFloat(g.valor) || 0), 0);
-            const totalContasPagas = contasFixas.reduce((acc, c) => ((c.pagamentos || []).includes(currentMonth)) ? acc + (parseFloat(c.valor) || 0) : acc, 0);
-            const totalContasPrevisao = contasFixas.reduce((acc, c) => acc + (parseFloat(c.valor) || 0), 0);
-            const saldoTotal = totalReceitas - totalGastos - totalContasPagas;
-            const saldoBtcReais = btcHoldings * btcPrice;
-
-            const fmtMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-            const fmtDate = (d) => {
-                if (!d) return '-';
-                if (d.length === 7) return d; 
-                return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
-            };
-
-            // Histórico Unificado
-            const historicoMes = useMemo(() => {
-                const list = [
-                    ...receitasMes.map(r => ({...r, type: 'receita'})),
-                    ...gastosMes.map(g => ({...g, type: 'gasto'})),
-                    ...contasFixas.filter(c => (c.pagamentos || []).includes(currentMonth)).map(c => ({
-                        id: c.id + '_fixed',
-                        descricao: c.descricao,
-                        valor: c.valor,
-                        data: c.vencimento ? `${currentMonth}-${c.vencimento.split('-')[2]}` : `${currentMonth}-01`, 
-                        categoria: 'Conta Fixa',
-                        type: 'fixa'
-                    }))
-                ];
-                const termo = historySearch.toLowerCase();
-                return list.filter(item => 
-                    item.descricao.toLowerCase().includes(termo) || 
-                    (item.categoria && item.categoria.toLowerCase().includes(termo))
-                ).sort((a, b) => new Date(b.data || currentMonth) - new Date(a.data || currentMonth));
-            }, [receitasMes, gastosMes, contasFixas, currentMonth, historySearch]);
-
-            const gastosPorCategoria = useMemo(() => {
-                const group = {};
-                gastosMes.forEach(g => group[g.categoria] = (group[g.categoria] || 0) + parseFloat(g.valor));
-                if (totalContasPagas > 0) group['Contas Fixas'] = (group['Contas Fixas'] || 0) + totalContasPagas;
-                return Object.entries(group).map(([cat, val]) => ({ categoria: cat, valor: val })).sort((a, b) => b.valor - a.valor);
-            }, [gastosMes, totalContasPagas]);
-
-
-            // --- VIEW ---
-            if (!session) {
-                return (
-                    <div className="login-container">
-                        <div className="login-card">
-                            <div className="login-logo"><IconWallet style={{width: 60, height: 60}} /></div>
-                            <h2 style={{marginBottom: 10, color: 'var(--text-main)'}}>Finanças Pro</h2>
-                            <p style={{marginBottom: 30, color: 'var(--secondary)'}}>Entre para acessar suas finanças</p>
-                            <form onSubmit={handleLogin}>
-                                <div className="form-group" style={{textAlign:'left'}}><label>Email</label><input required type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="seu@email.com" /></div>
-                                <div className="form-group" style={{textAlign:'left'}}><label>Senha</label><input required type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="******" /></div>
-                                <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
-                                <div style={{textAlign:'center', marginTop: 15}}><a href="#" className="login-link" onClick={handleSolicitarLogin}>Solicitar Login</a></div>
-                            </form>
-                        </div>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <input type="email" id="email" placeholder="E-mail" class="glass-input w-full p-4" required>
                     </div>
-                );
-            }
-
-            return (
-                <div className="container">
-                    {/* Header */}
-                    <div className="header-controls">
-                        <div style={{display:'flex', alignItems:'center', gap: 15}}>
-                            <div style={{background: '#2563eb', color: 'white', padding: '10px', borderRadius: '12px', display:'flex'}}><IconWallet /></div>
-                            <div>
-                                <h1 style={{fontSize: 20, fontWeight: 700}}>Olá, {session.user.email.split('@')[0]}</h1>
-                                <p style={{fontSize: 13, color: 'var(--secondary)'}}>Conectado</p>
-                            </div>
-                        </div>
-                        <div style={{display:'flex', gap: 10, alignItems:'center'}}>
-                            <input type="month" className="month-selector" value={currentMonth} onChange={(e) => setCurrentMonth(e.target.value)} />
-                            <button className="btn-icon" onClick={handleLogout} title="Sair"><IconLogOut /></button>
-                        </div>
+                    <div>
+                        <input type="password" id="password" placeholder="Senha" class="glass-input w-full p-4" required>
                     </div>
+                    <button type="submit" class="glass-btn w-full p-4 mt-2 shadow-lg">Entrar</button>
+                </form>
+            </div>
+        </div>
 
-                    {/* Tabs */}
-                    <div className="tabs">
-                        <button className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}><IconDashboard /> Dashboard</button>
-                        <button className={`tab ${activeTab === 'historico' ? 'active' : ''}`} onClick={() => setActiveTab('historico')}><IconHistory /> Histórico</button>
-                        <button className={`tab ${activeTab === 'receitas' ? 'active' : ''}`} onClick={() => setActiveTab('receitas')}><IconPlus /> Receitas</button>
-                        <button className={`tab ${activeTab === 'gastos' ? 'active' : ''}`} onClick={() => setActiveTab('gastos')}><IconTrendingDown /> Gastos</button>
-                        <button className={`tab ${activeTab === 'contasFixas' ? 'active' : ''}`} onClick={() => setActiveTab('contasFixas')}><IconFileText /> Fixas</button>
-                        <button className={`tab ${activeTab === 'dividas' ? 'active' : ''}`} onClick={() => setActiveTab('dividas')}><IconCreditCard /> Dívidas</button>
-                        <button className={`tab ${activeTab === 'bitcoin' ? 'active' : ''}`} onClick={() => setActiveTab('bitcoin')}><IconBitcoin /> Bitcoin</button>
-                        <button className={`tab ${activeTab === 'anotacoes' ? 'active' : ''}`} onClick={() => setActiveTab('anotacoes')}><IconEdit /> Notas</button>
-                    </div>
 
-                    {/* DASHBOARD */}
-                    {activeTab === 'dashboard' && (
-                        <>
-                            <div className="stats-grid">
-                                <div className="stat-card"><div className="stat-label">Saldo (Mês)</div><div className={`stat-value ${saldoTotal >= 0 ? 'positive' : 'negative'}`}>{fmtMoney(saldoTotal)}</div></div>
-                                <div className="stat-card"><div className="stat-label">Total Recebido</div><div className="stat-value positive">{fmtMoney(totalReceitas)}</div></div>
-                                <div className="stat-card"><div className="stat-label">Gastos + Fixas</div><div className="stat-value negative">{fmtMoney(totalGastos + totalContasPagas)}</div></div>
-                                <div className="stat-card"><div className="stat-label">Reserva Emergência</div><div className="stat-value warning">{fmtMoney(reservaEmergencia)}</div></div>
-                            </div>
-
-                            <div className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                                <div><h2 style={{marginBottom:5}}>Reserva de Emergência</h2><p style={{fontSize:13, color:'var(--secondary)'}}>Valor guardado para imprevistos</p></div>
-                                <form onSubmit={atualizarReserva} style={{display:'flex', gap:10}}>
-                                    <input type="number" step="0.01" placeholder="Novo valor..." value={reservaInput} onChange={e => setReservaInput(e.target.value)} style={{width: 150}} />
-                                    <button type="submit" className="btn-primary" style={{width:'auto'}}>Atualizar</button>
-                                </form>
-                            </div>
-
-                            <div className="form-row">
-                                <div className="card">
-                                    <h2>Top Categorias</h2>
-                                    {gastosPorCategoria.length === 0 ? <p style={{color:'#94a3b8'}}>Sem gastos este mês.</p> : (
-                                        gastosPorCategoria.slice(0, 5).map((cat, idx) => (
-                                            <div key={idx} className="category-bar-item">
-                                                <div className="category-header"><span>{cat.categoria}</span><strong>{fmtMoney(cat.valor)}</strong></div>
-                                                <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${(cat.valor / (totalGastos + totalContasPagas || 1)) * 100}%`}}></div></div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                <div className="card">
-                                    <h2>Últimas Movimentações</h2>
-                                    {historicoMes.slice(0, 5).map((item, idx) => (
-                                        <div key={idx} className="transaction-item">
-                                            <div className="transaction-info"><div className="transaction-description">{item.descricao}</div><div className="transaction-meta">{fmtDate(item.data)} • {item.categoria || 'Geral'}</div></div>
-                                            <div className={`transaction-amount ${item.type === 'receita' ? 'positive' : 'negative'}`}>{item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* BITCOIN TAB */}
-                    {activeTab === 'bitcoin' && (
-                        <>
-                            <div className="stats-grid">
-                                <div className="stat-card"><div className="stat-label">Total em Bitcoin</div><div className="stat-value bitcoin">{btcHoldings} BTC</div></div>
-                                <div className="stat-card"><div className="stat-label">Valor em Reais (Hoje)</div><div className="stat-value positive">{fmtMoney(saldoBtcReais)}</div></div>
-                                <div className="stat-card"><div className="stat-label">Cotação Atual (1 BTC)</div><div className="stat-value">{fmtMoney(btcPrice)}</div></div>
-                            </div>
-                            
-                            <div className="card">
-                                <h2>Gerenciar Carteira Bitcoin</h2>
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label>Atualizar Quantidade de BTC</label>
-                                        <div style={{display:'flex', gap: 10}}>
-                                            <input type="number" step="0.00000001" value={btcHoldings} onChange={e => setBtcHoldings(e.target.value)} />
-                                            <button className="btn-primary" style={{width:'auto'}} onClick={saveBtcHoldings}>Salvar</button>
-                                        </div>
-                                        <p style={{fontSize:12, color:'var(--secondary)', marginTop:5}}>Insira a fração exata (ex: 0.00540000)</p>
-                                    </div>
-                                    <div className="form-group" style={{display:'flex', alignItems:'center', justifyContent:'center'}}>
-                                        <button className="btn-ghost" onClick={fetchBtcPrice}><IconRefresh /> Atualizar Cotação Agora</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* HISTÓRICO */}
-                    {activeTab === 'historico' && (
-                        <div className="card">
-                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 20, flexWrap:'wrap', gap: 10}}>
-                                <h2>Histórico Detalhado: {currentMonth}</h2>
-                                <div style={{position:'relative', maxWidth: 300, width:'100%'}}>
-                                    <input type="text" placeholder="Buscar..." value={historySearch} onChange={e => setHistorySearch(e.target.value)} style={{paddingLeft: 35}} />
-                                    <div style={{position:'absolute', left: 10, top: 10, color: '#94a3b8'}}><IconSearch /></div>
-                                </div>
-                            </div>
-                            <div className="stats-grid" style={{marginBottom: 30}}>
-                                <div className="stat-card" style={{padding: 15}}><div className="stat-label">Entradas</div><div className="stat-value positive" style={{fontSize: 20}}>{fmtMoney(historicoMes.filter(i => i.type === 'receita').reduce((a,b)=>a+b.valor,0))}</div></div>
-                                <div className="stat-card" style={{padding: 15}}><div className="stat-label">Saídas</div><div className="stat-value negative" style={{fontSize: 20}}>{fmtMoney(historicoMes.filter(i => i.type !== 'receita').reduce((a,b)=>a+b.valor,0))}</div></div>
-                            </div>
-                            {historicoMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 40}}>Nenhum registro encontrado.</p> : (
-                                <div>
-                                    <div style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', color: '#64748b', fontSize: 13, fontWeight: 600, borderBottom: '1px solid #e2e8f0'}}>
-                                        <div>Descrição</div><div>Categoria</div><div>Data</div><div style={{textAlign:'right'}}>Valor</div>
-                                    </div>
-                                    {historicoMes.map((item, idx) => (
-                                        <div key={idx} style={{display:'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '15px 10px', borderBottom: '1px solid #f1f5f9', alignItems:'center'}}>
-                                            <div style={{fontWeight: 500}}>{item.descricao}</div>
-                                            <div style={{fontSize: 13, color: '#64748b'}}>{item.categoria || '-'}</div>
-                                            <div style={{fontSize: 13, color: '#64748b'}}>{fmtDate(item.data)}</div>
-                                            <div style={{textAlign:'right', fontWeight: 600, color: item.type === 'receita' ? 'var(--success)' : 'var(--danger)'}}>{item.type === 'receita' ? '+' : '-'} {fmtMoney(item.valor)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* GASTOS */}
-                    {activeTab === 'gastos' && (
-                        <>
-                            <div className="card">
-                                <h2>Adicionar Gasto</h2>
-                                <form onSubmit={handleAddGasto}>
-                                    <div className="form-row">
-                                        <div className="form-group"><label>Descrição</label><input required type="text" value={formGasto.descricao} onChange={e => setFormGasto({...formGasto, descricao: e.target.value})} /></div>
-                                        <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formGasto.valor} onChange={e => setFormGasto({...formGasto, valor: e.target.value})} /></div>
-                                    </div>
-                                    <div className="form-row">
-                                        <div className="form-group"><label>Categoria</label>
-                                            <select value={formGasto.categoria} onChange={e => setFormGasto({...formGasto, categoria: e.target.value})}>
-                                                {CATEGORIAS_GASTOS.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="form-group"><label>Forma de Pagamento</label>
-                                            <select value={formGasto.forma_de_pagamento} onChange={e => setFormGasto({...formGasto, forma_de_pagamento: e.target.value})}>
-                                                {FORMA_DE_PAGAMENTO.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="form-group"><label>Data</label><input required type="date" value={formGasto.data} onChange={e => setFormGasto({...formGasto, data: e.target.value})} /></div>
-                                    </div>
-                                    <button type="submit" className="btn-primary"><IconPlus /> Adicionar</button>
-                                </form>
-                            </div>
-                            <div className="card">
-                                <h2>Lista de Gastos ({currentMonth})</h2>
-                                {gastosMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 20}}>Nenhum gasto neste mês.</p> : 
-                                    gastosMes.slice().reverse().map(g => (
-                                    <div key={g.id} className="transaction-item">
-                                        <div className="transaction-info">
-                                            <div className="transaction-description">{g.descricao}</div>
-                                            <div className="transaction-meta"><span className="badge badge-cat">{g.categoria}</span><span>{fmtDate(g.data)}</span></div>
-                                        </div>
-                                        <div style={{display:'flex', alignItems:'center', gap: 15}}>
-                                            <div className="transaction-amount negative">- {fmtMoney(g.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem('gastos', setGastos, gastos, g.id)}><IconTrash /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* RECEITAS */}
-                    {activeTab === 'receitas' && (
-                        <>
-                            <div className="card">
-                                <h2>Nova Receita</h2>
-                                <form onSubmit={handleAddReceita}>
-                                    <div className="form-row">
-                                        <div className="form-group"><label>Descrição</label><input required type="text" value={formReceita.descricao} onChange={e => setFormReceita({...formReceita, descricao: e.target.value})} /></div>
-                                        <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formReceita.valor} onChange={e => setFormReceita({...formReceita, valor: e.target.value})} /></div>
-                                    </div>
-                                    <div className="form-row">
-                                        <div className="form-group"><label>Tipo</label><select value={formReceita.tipo} onChange={e => setFormReceita({...formReceita, tipo: e.target.value})}><option value="PF">Pessoa Física</option><option value="PJ">Pessoa Jurídica</option></select></div>
-                                        <div className="form-group"><label>Data</label><input required type="date" value={formReceita.data} onChange={e => setFormReceita({...formReceita, data: e.target.value})} /></div>
-                                    </div>
-                                    <button type="submit" className="btn-primary"><IconPlus /> Adicionar</button>
-                                </form>
-                            </div>
-                            <div className="card">
-                                {receitasMes.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center', padding: 20}}>Nenhuma receita neste mês.</p> :
-                                receitasMes.map(r => (
-                                    <div key={r.id} className="transaction-item">
-                                        <div className="transaction-info">
-                                            <div className="transaction-description">{r.descricao}</div>
-                                            <div className="transaction-meta"><span className={`badge ${r.tipo === 'PF' ? 'badge-pf' : 'badge-pj'}`}>{r.tipo}</span> <span>{fmtDate(r.data)}</span></div>
-                                        </div>
-                                        <div style={{display:'flex', alignItems:'center', gap: 15}}>
-                                            <div className="transaction-amount positive">+ {fmtMoney(r.valor)}</div>
-                                            <button className="btn-icon delete" onClick={() => delItem('receitas', setReceitas, receitas, r.id)}><IconTrash /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* CONTAS FIXAS */}
-                    {activeTab === 'contasFixas' && (
-                         <div className="card">
-                            <h2>Contas Fixas (Mensais)</h2>
-                            <form onSubmit={adicionarContaFixa} style={{marginBottom: 20}}>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Descrição</label><input required value={formContaFixa.descricao} onChange={e => setFormContaFixa({...formContaFixa, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Valor (R$)</label><input required type="number" step="0.01" value={formContaFixa.valor} onChange={e => setFormContaFixa({...formContaFixa, valor: e.target.value})} /></div>
-                                    <div className="form-group"><label>Vencimento (Data)</label><input required type="date" value={formContaFixa.vencimento} onChange={e => setFormContaFixa({...formContaFixa, vencimento: e.target.value})} /></div>
-                                </div>
-                                <button type="submit" className="btn-primary">Adicionar</button>
-                            </form>
-                            <h3 style={{marginTop: 30, marginBottom: 15, fontSize: 14, color: 'var(--secondary)'}}>Situação em {currentMonth}</h3>
-                            {contasFixas.length === 0 ? <p style={{color:'#94a3b8', textAlign:'center'}}>Nenhuma conta cadastrada.</p> :
-                            contasFixas.map(c => {
-                                const isPaid = (c.pagamentos || []).includes(currentMonth);
-                                return (
-                                <div key={c.id} className="transaction-item">
-                                    <div className="transaction-info">
-                                        <div className="transaction-description" style={{textDecoration: isPaid ? 'line-through' : 'none', color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{c.descricao}</div>
-                                        <div className="transaction-meta">Vence: {fmtDate(c.vencimento)} {isPaid && <span className="badge badge-paid" style={{marginLeft: 10}}>PAGO</span>}</div>
-                                    </div>
-                                    <div style={{display:'flex', gap: 10, alignItems:'center'}}>
-                                        <div className="transaction-amount" style={{color: isPaid ? '#94a3b8' : 'var(--text-main)'}}>{fmtMoney(c.valor)}</div>
-                                        <button className={`btn-icon check ${isPaid ? 'paid' : ''}`} title={isPaid ? "Marcar como não pago" : "Marcar como pago"} onClick={() => toggleContaFixaPaga(c)}><IconCheck /></button>
-                                        <button className="btn-icon delete" onClick={()=>delItem('contasFixas', setContasFixas, contasFixas, c.id)}><IconTrash/></button>
-                                    </div>
-                                </div>
-                            )})}
-                        </div>
-                    )}
-
-                    {/* DÍVIDAS */}
-                    {activeTab === 'dividas' && (
-                        <div className="card">
-                            <h2>Gestão de Dívidas</h2>
-                             <form onSubmit={adicionarDivida} style={{marginBottom: 20}}>
-                                <div className="form-row">
-                                    <div className="form-group"><label>Descrição</label><input required value={formDivida.descricao} onChange={e => setFormDivida({...formDivida, descricao: e.target.value})} /></div>
-                                    <div className="form-group"><label>Total (R$)</label><input required type="number" step="0.01" value={formDivida.valorTotal} onChange={e => setFormDivida({...formDivida, valorTotal: e.target.value})} /></div>
-                                    <div className="form-group"><label>Parcelas</label><input required type="number" value={formDivida.parcelas} onChange={e => setFormDivida({...formDivida, parcelas: e.target.value})} /></div>
-                                </div>
-                                <button type="submit" className="btn-primary">Adicionar Dívida</button>
-                            </form>
-                            {dividas.map(d => {
-                                const p = (d.valor_pago/d.valor_total)*100;
-                                return (
-                                <div key={d.id} className="transaction-item" style={{display:'block'}}>
-                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom: 5}}>
-                                        <div><div className="transaction-description">{d.descricao}</div><small style={{color:'var(--danger)'}}>Restante: {fmtMoney(d.valor_total - d.valor_pago)}</small></div>
-                                        <div style={{display:'flex', gap: 5}}>
-                                            <button className="btn-icon edit" onClick={() => { setDividaSelecionada(d); setModalDividaOpen(true); setNovaParcelaInput(d.parcela_atual); }}><IconRefresh/></button>
-                                            <button className="btn-icon delete" onClick={()=>delItem('dividas', setDividas, dividas, d.id)}><IconTrash/></button>
-                                        </div>
-                                    </div>
-                                    <div className="category-progress-bg"><div className="category-progress-fill" style={{width: `${p}%`}}></div></div>
-                                </div>
-                            )})}
-                        </div>
-                    )}
-                    
-                    {/* ANOTAÇÕES */}
-                    {activeTab === 'anotacoes' && (
-                        <div className="card">
-                             <form onSubmit={adicionarAnotacao} style={{marginBottom: 20}}>
-                                <textarea value={formAnotacao} onChange={e => setFormAnotacao(e.target.value)} placeholder="Nova nota..." style={{minHeight: 80, marginBottom: 10}}></textarea>
-                                <button type="submit" className="btn-primary">Salvar</button>
-                            </form>
-                            {anotacoes.map(a => <div key={a.id} className="transaction-item"><p>{a.conteudo}</p><button className="btn-icon delete" onClick={()=>delItem('anotacoes', setAnotacoes, anotacoes, a.id)}><IconTrash/></button></div>)}
-                        </div>
-                    )}
-
-                    {/* MODAL DIVIDA */}
-                    {modalDividaOpen && dividaSelecionada && (
-                        <div className="modal-overlay">
-                            <div className="modal-content">
-                                <h3>Atualizar: {dividaSelecionada.descricao}</h3>
-                                <div className="form-group" style={{marginTop: 20}}>
-                                    <label>Pagamento Extra (R$)</label>
-                                    <input type="number" value={valorPagamentoInput} onChange={e => setValorPagamentoInput(e.target.value)} placeholder="0.00" />
-                                </div>
-                                <div className="form-group"><label>Parcela Atual</label><input type="number" value={novaParcelaInput} onChange={e => setNovaParcelaInput(e.target.value)} /></div>
-                                <div style={{display:'flex', gap: 10, justifyContent:'flex-end'}}>
-                                    <button className="btn-ghost" onClick={()=>setModalDividaOpen(false)}>Cancelar</button>
-                                    <button className="btn-primary" style={{width:'auto'}} onClick={atualizarDivida}>Salvar</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
+        <!-- ============================================== -->
+        <!-- VIEW: HOME (DASHBOARD)                         -->
+        <!-- ============================================== -->
+        <div id="view-home" class="view flex-1 flex flex-col pb-20">
+            <!-- Header -->
+            <div class="flex justify-between items-center py-4 mb-2">
+                <div>
+                    <h2 class="text-sm font-medium text-white/60 uppercase tracking-wider" id="current-month-label">Mês</h2>
+                    <h1 class="text-3xl font-bold">Agenda</h1>
                 </div>
-            );
+                <div class="flex gap-2">
+                    <button id="btn-login-small" onclick="navigateTo('view-login')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center">
+                        <i class="ph ph-user text-xl"></i>
+                    </button>
+                    <button id="btn-add-event" onclick="navigateTo('view-add')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center hidden">
+                        <i class="ph ph-plus text-xl"></i>
+                    </button>
+                    <button id="btn-logout" onclick="logout()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center hidden">
+                        <i class="ph ph-sign-out text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar Section -->
+            <div class="glass-panel p-5 mb-6">
+                <div class="calendar-grid text-white/50 text-xs mb-2 font-medium">
+                    <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                </div>
+                <div id="calendar-days" class="calendar-grid">
+                    <!-- Days will be generated by JS -->
+                </div>
+            </div>
+
+            <!-- Upcoming Events Section -->
+            <div class="mb-2 flex justify-between items-end">
+                <h2 class="text-xl font-semibold">Próximos Cultos</h2>
+            </div>
+            
+            <div id="upcoming-events-container" class="space-y-3">
+                <!-- Event Cards will be generated by JS -->
+                <div class="text-center py-8 text-white/50 text-sm">Carregando eventos...</div>
+            </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW: EVENT DETAIL                             -->
+        <!-- ============================================== -->
+        <div id="view-detail" class="view flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center py-4 mb-4">
+                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4">
+                    <i class="ph ph-caret-left text-xl"></i>
+                </button>
+                <div class="flex-1">
+                    <h2 class="text-sm text-white/60 font-medium" id="detail-date">00/00/0000</h2>
+                    <h1 class="text-2xl font-bold" id="detail-title">Culto</h1>
+                </div>
+                <button id="btn-delete-event" onclick="deleteCurrentEvent()" class="glass-btn-secondary w-10 h-10 flex items-center justify-center text-red-400 hidden">
+                    <i class="ph ph-trash text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Roster List -->
+            <div class="glass-panel p-2 space-y-1" id="detail-roster">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW: ADD EVENT                                -->
+        <!-- ============================================== -->
+        <div id="view-add" class="view flex-1 flex flex-col pb-8">
+            <div class="flex items-center py-4 mb-4">
+                <button onclick="navigateTo('view-home')" class="glass-btn-secondary w-10 h-10 flex items-center justify-center mr-4">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+                <h1 class="text-2xl font-bold">Nova Escala</h1>
+            </div>
+
+            <form id="add-event-form" class="space-y-4 glass-panel p-5">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-white/60 mb-1 ml-1">Data</label>
+                        <input type="date" id="add-date" class="glass-input w-full p-3 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-white/60 mb-1 ml-1">Título do Culto</label>
+                        <input type="text" id="add-title" placeholder="Ex: Culto de Domingo" class="glass-input w-full p-3 text-sm" required>
+                    </div>
+                </div>
+
+                <div class="space-y-3 mt-4">
+                    <h3 class="text-sm font-semibold text-white/80 border-b border-white/10 pb-2">Equipe</h3>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-microphone-stage text-xl"></i></div>
+                        <input type="text" id="add-dirigente" placeholder="Dirigente" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-book-open-text text-xl"></i></div>
+                        <input type="text" id="add-pregador" placeholder="Pregador(a)" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-music-notes text-xl"></i></div>
+                        <input type="text" id="add-louvor" placeholder="Louvor (Banda/Vocal)" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-handshake text-xl"></i></div>
+                        <input type="text" id="add-acolhimento" placeholder="Acolhimento" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-video-camera text-xl"></i></div>
+                        <input type="text" id="add-projecao" placeholder="Projeção / Live" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-megaphone text-xl"></i></div>
+                        <input type="text" id="add-marketing" placeholder="Marketing" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-baby text-xl"></i></div>
+                        <input type="text" id="add-kids" placeholder="Kids" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 flex justify-center text-white/50"><i class="ph ph-sliders text-xl"></i></div>
+                        <input type="text" id="add-tecnica" placeholder="Técnica (Som/Luz)" class="glass-input flex-1 p-3 text-sm">
+                    </div>
+                </div>
+
+                <button type="submit" class="glass-btn w-full p-4 mt-6 shadow-lg" id="btn-save">Salvar Escala</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full shadow-2xl font-medium text-sm transition-all duration-300 opacity-0 pointer-events-none z-50">
+        Mensagem
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO SUPABASE
+        // ==========================================
+        const SUPABASE_URL = 'https://qihnrltjjpfirsgtfvtr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpaG5ybHRqanBmaXJzZ3RmdnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NDI2NDMsImV4cCI6MjA4ODIxODY0M30.dS5raMLod4ktt33R_u3EEqZfYM25L1Vp-RBy0eaaj5k';
+        
+        // Renomeado de "supabase" para "supabaseClient" para evitar erro de colisão (SyntaxError)
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ==========================================
+        // ESTADO GLOBAL DO APP
+        // ==========================================
+        let currentUser = null;
+        let allEvents = [];
+        let selectedEventId = null;
+
+        const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        // ==========================================
+        // INICIALIZAÇÃO
+        // ==========================================
+        async function init() {
+            // Verificar sessão atual
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            updateAuthUI(session);
+
+            // Listener de Auth
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                updateAuthUI(session);
+            });
+            
+            // Sempre iniciar na tela de calendário
+            navigateTo('view-home');
+            loadDashboard();
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        function updateAuthUI(session) {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('btn-add-event').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                document.getElementById('btn-login-small').classList.add('hidden');
+            } else {
+                currentUser = null;
+                document.getElementById('btn-add-event').classList.add('hidden');
+                document.getElementById('btn-logout').classList.add('hidden');
+                document.getElementById('btn-login-small').classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // NAVEGAÇÃO
+        // ==========================================
+        function navigateTo(viewId) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.backgroundColor = isError ? '#ff3b30' : '#ffffff';
+            toast.style.color = isError ? '#ffffff' : '#000000';
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, 20px)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 0)';
+            }, 3000);
+        }
+
+        // ==========================================
+        // AUTENTICAÇÃO
+        // ==========================================
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Entrando...';
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                showToast('Erro no login. Verifique as credenciais.', true);
+                btn.textContent = 'Entrar';
+            } else {
+                showToast('Login efetuado!');
+                btn.textContent = 'Entrar';
+                navigateTo('view-home');
+                loadDashboard();
+            }
+        });
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            navigateTo('view-home');
+            showToast('Você saiu com sucesso.');
+        }
+
+        // ==========================================
+        // LÓGICA DO DASHBOARD (CALENDÁRIO E EVENTOS)
+        // ==========================================
+        async function loadDashboard() {
+            const today = new Date();
+            document.getElementById('current-month-label').textContent = `${months[today.getMonth()]} ${today.getFullYear()}`;
+            
+            await fetchEvents();
+            renderCalendar(today);
+            renderUpcomingEvents();
+        }
+
+        async function fetchEvents() {
+            // Busca eventos do mês atual em diante
+            const { data, error } = await supabaseClient
+                .from('escala_cultos')
+                .select('*')
+                .order('data_culto', { ascending: true });
+
+            if (error) {
+                console.error("Erro ao buscar eventos:", error);
+                showToast('Erro ao carregar dados', true);
+            } else {
+                allEvents = data || [];
+            }
+        }
+
+        function renderCalendar(date) {
+            const grid = document.getElementById('calendar-days');
+            grid.innerHTML = '';
+            
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const today = new Date();
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Espaços vazios
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDiv = document.createElement('div');
+                grid.appendChild(emptyDiv);
+            }
+
+            // Dias do mês
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                dayDiv.textContent = i;
+
+                // Formatar data YYYY-MM-DD local
+                const currentDate = new Date(year, month, i);
+                // Adjusting timezone issue simply by padding
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+                // É hoje?
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add('today');
+                }
+
+                // Tem evento?
+                const eventForDay = allEvents.find(e => e.data_culto === dateString);
+                if (eventForDay) {
+                    dayDiv.classList.add('has-event');
+                    dayDiv.classList.add('cursor-pointer', 'hover:bg-white/10', 'transition');
+                    dayDiv.onclick = () => openEventDetail(eventForDay);
+                }
+
+                grid.appendChild(dayDiv);
+            }
+        }
+
+        function renderUpcomingEvents() {
+            const container = document.getElementById('upcoming-events-container');
+            container.innerHTML = '';
+
+            // Filtrar eventos de hoje em diante e pegar os 4 próximos
+            const todayStr = new Date().toISOString().split('T')[0];
+            const upcoming = allEvents.filter(e => e.data_culto >= todayStr).slice(0, 4);
+
+            if (upcoming.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-white/50 text-sm glass-panel">Nenhum culto programado para os próximos dias.</div>';
+                return;
+            }
+
+            upcoming.forEach(event => {
+                // Parse date for UI
+                const [y, m, d] = event.data_culto.split('-');
+                const dateObj = new Date(y, m - 1, d);
+                const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dateObj.getDay()];
+                const formattedDate = `${d}/${m}`;
+
+                const card = document.createElement('div');
+                card.className = 'glass-panel p-4 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors';
+                card.onclick = () => openEventDetail(event);
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white/10 rounded-xl w-14 h-14 flex flex-col items-center justify-center border border-white/5">
+                            <span class="text-xs text-white/60 font-medium">${dayName}</span>
+                            <span class="text-lg font-bold">${d}</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg">${event.titulo}</h3>
+                            <p class="text-white/60 text-sm"><i class="ph ph-microphone-stage mr-1"></i>${event.pregador || 'A definir'}</p>
+                        </div>
+                    </div>
+                    <i class="ph ph-caret-right text-white/40"></i>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // DETALHES DO EVENTO
+        // ==========================================
+        function openEventDetail(event) {
+            selectedEventId = event.id;
+            
+            // Format Title and Date
+            const [y, m, d] = event.data_culto.split('-');
+            document.getElementById('detail-date').textContent = `${d}/${m}/${y}`;
+            document.getElementById('detail-title').textContent = event.titulo;
+
+            // Admin features
+            if (currentUser) {
+                document.getElementById('btn-delete-event').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-delete-event').classList.add('hidden');
+            }
+
+            // Render Roster items
+            const rosterContainer = document.getElementById('detail-roster');
+            rosterContainer.innerHTML = '';
+
+            const roles = [
+                { key: 'dirigente', label: 'Dirigente', icon: 'ph-microphone-stage' },
+                { key: 'pregador', label: 'Pregador(a)', icon: 'ph-book-open-text' },
+                { key: 'louvor', label: 'Louvor', icon: 'ph-music-notes' },
+                { key: 'acolhimento', label: 'Acolhimento', icon: 'ph-handshake' },
+                { key: 'projecao_live', label: 'Projeção/Live', icon: 'ph-video-camera' },
+                { key: 'marketing', label: 'Marketing', icon: 'ph-megaphone' },
+                { key: 'kids', label: 'Kids', icon: 'ph-baby' },
+                { key: 'tecnica', label: 'Técnica', icon: 'ph-sliders' }
+            ];
+
+            roles.forEach((role, index) => {
+                const value = event[role.key] || '<span class="text-white/30 italic">A definir</span>';
+                
+                const item = document.createElement('div');
+                item.className = `flex items-center p-3 ${index !== roles.length -1 ? 'border-b border-white/5' : ''}`;
+                
+                item.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mr-3 border border-white/5">
+                        <i class="ph ${role.icon} text-lg text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-white/50 uppercase tracking-wide font-medium">${role.label}</p>
+                        <p class="font-medium text-[15px] mt-0.5">${value}</p>
+                    </div>
+                `;
+                rosterContainer.appendChild(item);
+            });
+
+            navigateTo('view-detail');
+        }
+
+        async function deleteCurrentEvent() {
+            if(!confirm('Tem certeza que deseja excluir esta escala?')) return;
+
+            const { error } = await supabaseClient
+                .from('escala_cultos')
+                .delete()
+                .eq('id', selectedEventId);
+
+            if (error) {
+                showToast('Erro ao excluir', true);
+            } else {
+                showToast('Escala excluída com sucesso!');
+                loadDashboard();
+                navigateTo('view-home');
+            }
+        }
+
+        // ==========================================
+        // ADICIONAR NOVO EVENTO
+        // ==========================================
+        document.getElementById('add-event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btn-save');
+            btn.textContent = 'Salvando...';
+
+            const newEvent = {
+                data_culto: document.getElementById('add-date').value,
+                titulo: document.getElementById('add-title').value,
+                dirigente: document.getElementById('add-dirigente').value,
+                pregador: document.getElementById('add-pregador').value,
+                louvor: document.getElementById('add-louvor').value,
+                acolhimento: document.getElementById('add-acolhimento').value,
+                projecao_live: document.getElementById('add-projecao').value,
+                marketing: document.getElementById('add-marketing').value,
+                kids: document.getElementById('add-kids').value,
+                tecnica: document.getElementById('add-tecnica').value,
+            };
+
+            const { data, error } = await supabaseClient
+                .from('escala_cultos')
+                .insert([newEvent]);
+
+            if (error) {
+                console.error(error);
+                showToast('Erro ao salvar escala', true);
+                btn.textContent = 'Salvar Escala';
+            } else {
+                showToast('Escala criada com sucesso!');
+                document.getElementById('add-event-form').reset();
+                btn.textContent = 'Salvar Escala';
+                await loadDashboard();
+                navigateTo('view-home');
+            }
+        });
+
+        // Initialize App on load
+        window.onload = init;
+
     </script>
 </body>
 </html>
